@@ -1,0 +1,4124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<!-- SHORT OVERVIEW ABOUT SUPPORT IN BROWSER -->
+<!--
+/**
+ * Firefox 18 (resolved Duration bug in audio/video)
+ * Firefox 21 (more support for css,html and js attributes)
+ * Safari 7(theoretical)/SF ios7.1(theoretical)/8+? (FileReader API is in SF8 Buggy)
+ * IE 10 (if you have 10, favorite 11, because you can^^ http://windows.microsoft.com/en-US/internet-explorer/download-ie)
+ * Opera 25 (possible earlier but have not tested since a long time, but more support for css,html and js attributes in 25)
+ * Chrome 31/android 38/4.4.(4|3)/37 (possible earlier but have not tested since a long time)
+ *
+ * MAYBE SUPPORT
+ * Smart TV with NetFront Browser NX greater as v2.1 IN other words: v2.1 is not working
+ *
+ * NOT SUPPORTED
+ * Opera Mini
+ * Wii
+ * Wii U (NetFront Browser NX v2.1)
+ *
+ **/
+-->
+
+<!--
+/**
+ *
+ *	Thanks to M3d1c5 at http://blog.m3d1c5.org and Tim Pritlove at http://metaebene.me for the inspiration or i hate you for the lost time;)
+ *	Sorry for all other dudes thus waste time with my stuff here, too ;)
+ *
+ *  primary optimized for some podcasts from Tim Pritlove at http://metaebene.me and chatlog from http://streams.xenim.de/
+ *
+ *  TODO: 
+ *	generaly chatlog support from:
+ *	plain irc logs (e.g. from http://streams.xenim.de/ live chat)
+ *	and/or post production by irclog2html.py (http://mg.pov.lt/irclog2html/)
+ *	and/or post post production by podcast_timestamp.py (http://randomprojects.de/stuff/podcast_timestamps.py)
+ *
+ *	generaly audio/video (minimal web) support (case of used browser) from:
+ *	ogg (container) - ogg,oga,ogv,ogx,opus (file extension) mime: audio/ogg,video/ogg codecs: audio/vorbis,video/theora,audio/opus [metadata: VorbisComment, OpusTags]
+ *	mp3 (container, file extension) mime: audio/mpeg codecs: (no codec defined instead use the mime: audio/mpeg) [metadata: ID3v2 (v2.4.0 and v2.3.0)]
+ *	mp4 (container) - mp4,m4a,m4v (file extension) mime: audio/mp4,video/mp4 codecs: audio/mp4a.40.2 (Low-Complexity AAC), video/avc1.42E01E (H.264 Baseline Profile recommend by iOS), video/mp4v.20.9 (MPEG-4 Visual Simple Profile Level 0) [metadata: Atom]
+ *	webm (container, file extension) codecs: video/vp8 (vp8.0 is the same), audio/vorbis [metadata: not supported yet]
+ *	wav (container, file extension) mime: audio/wave (wave preferred by FF but wav preferred by some others [not verified]) codecs: 1 (WAVE_FORMAT_PCM) [metadata: not supported yet]
+ *
+ *
+ *
+ *
+
+ **	realy intersting stuff take a look or two (.js tools):
+ *	http://labs.official.fm/articles/2012/06/15/flac-and-aurora/
+ *	http://badassjs.com/post/14463682242/introducing-alac-js-an-apple-lossless-audio-decoder-in
+ *	https://github.com/aadsm/JavaScript-ID3-Reader/tree/
+ *
+
+ **	some file (metadata) specs?
+ *	OGG:
+ *	http://tools.ietf.org/html/draft-terriberry-oggopus-01 <--- BEWARE, the redirect to a newer or older draft is sometimes strange and confusing.
+ *	http://wiki.xiph.org/VorbisComment
+ *	MP3:
+ *	http://id3.org/Developer%20Information
+ *	MP4:
+ *	http://atomicparsley.sourceforge.net/mpeg-4files.html
+ *	http://www.adobe.com/devnet/video/articles/mp4_movie_atom.html
+ * 	http://forum.doom9.org/showthread.php?t=62723
+ *	https://developer.apple.com/library/mac/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html
+ *	http://developer.apple.com/library/mac/documentation/quicktime/qtff/Metadata/Metadata.html
+ *	WEBM:
+ *	http://www.webmproject.org/docs/container/
+ *
+
+ **	some test files?
+ *	http://samples.mplayerhq.hu/
+ *	http://media.xiph.org/
+ *	http://media.xiph.org/video/derf/
+ *	http://wiki.xiph.org/TheoraTestsuite
+ *	http://wiki.xiph.org/VorbisComment#Playback_tests
+ *	http://support.apple.com/kb/HT1425
+ *
+ *
+ * https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/srcObject <-- new 2022 :D
+ **/
+ -->
+<style type="text/css">
+html,body,div,audio,video,canvas,textarea,input,p,img {
+	position:relative;
+	display:block;
+	margin:0;
+	padding:0;
+}
+canvas, img {
+	/*
+		http://stackoverflow.com/questions/7615009/disable-interpolation-when-scaling-a-canvas
+		https://developer.mozilla.org/en-US/docs/CSS/Image-rendering#Browser_compatibility
+		http://code.google.com/p/chromium/issues/detail?id=134040
+		http://phoboslab.org/log/2012/09/drawing-pixels-is-hard
+		http://phrogz.net/tmp/canvas_image_zoom.html
+	*/
+    image-rendering: optimizeSpeed;
+    image-rendering: -moz-crisp-edges;
+	image-rendering: -o-crisp-edges;
+	image-rendering: crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: optimize-contrast;
+    -ms-interpolation-mode: nearest-neighbor;
+}
+html,body {
+	height:100%;
+	width:100%;
+	font:normal bold .9em/1.4 SourceSansPro, "Trebuchet MS", Trebuchet, System, Tahoma, "Tahoma MS", "Arial MS", Verdana, Arial, sans-serif;
+}
+blink {
+	color:red;
+}
+.layer {
+/*	position:absolute;
+	top:0;
+	left:0;
+	height:100%;
+	width:100%;
+*/
+}
+#layer_1 {
+	z-index:10;
+}
+#layer_2 {
+	z-index:20;
+}
+#layer_3 {
+	z-index:30;
+}
+.left:after {
+	content:"◄";
+}
+.right:after {
+	content:"►";
+}
+.top:after,
+.close:after {
+	content:"▲";
+}
+.bott:after,
+.open:after {
+	content:"▼";
+}
+.full:after {
+	content:"■";
+	font-size:1.4em;
+	line-height:0.7;
+}
+.empty:after {
+	content:"□";
+	font-size:1.5em;
+	line-height:0.7;
+}
+.cross:after {
+	content:"♦";
+	/*font-size:1.5em;
+	line-height:0.7;*/
+}
+
+#spc_gui {
+	width:100%;
+	height:100%;
+}
+
+/* layer 1 zindex 10 img/canvas, metainfo,status */
+#spc_cover {
+	position:fixed;
+	top:0;
+	left:0;
+	width:100%;
+	height:100%;
+}
+#metainfo {
+	position:absolute;
+	display:block;
+	background-color:red;
+	top:3em;
+	left:0;
+	width:auto;
+	height:auto;
+	padding:1em;
+/*	font:normal bold 14px/1.4 SourceSansPro, "Trebuchet MS", Trebuchet, System, Tahoma, "Tahoma MS", "Arial MS", Verdana, Arial, sans-serif;
+	color:#F1F1F1;
+	text-shadow: 1px 1px 2px #000000;*/
+}
+#status {
+	position:fixed;
+	display:block;
+	height: auto;
+	width: 100%;
+
+	top:85%;
+	bottom:auto;
+	margin-top:-1.5em;
+	margin-bottom:0;
+
+	text-align:center;
+	vertical-align:middle;
+	font-size: 3em;
+	color:rgba(255,255,255,1);
+
+	/*
+    animation-name: none
+    animation-duration: 0s
+    animation-timing-function: ease
+    animation-delay: 0s
+    animation-iteration-count: 1
+    animation-direction: normal
+    animation-fill-mode: none
+	*/
+
+	-o-animation: blend 3s linear 0s infinite alternate;
+	-ms-animation: blend 3s linear 0s infinite alternate;
+	-moz-animation: blend 3s linear 0s infinite alternate;
+	-khtml-animation: blend 3s linear 0s infinite alternate;
+	-webkit-animation: blend 3s linear 0s infinite alternate;
+	animation: blend 3s linear 0s infinite alternate;
+}
+
+/*
+@-o-keyframes blend,
+@-ms-keyframes blend,
+@-moz-keyframes blend,
+@-khtml-keyframes blend,
+@-webkit-keyframes blend
+*/
+
+@-moz-keyframes blend {
+	0% {
+		color:white;
+		text-shadow: 1px 1px 1px black;
+	}
+	100% {
+		color:transparent;
+		text-shadow: 1px 1px 1px transparent;
+	}
+}
+@-webkit-keyframes blend {
+	0% {
+		color:white;
+		text-shadow: 1px 1px 1px black;
+	}
+	100% {
+		color:transparent;
+		text-shadow: 1px 1px 1px transparent;
+	}
+}
+@-khtml-keyframes blend {
+	0% {
+		color:white;
+		text-shadow: 1px 1px 1px black;
+	}
+	100% {
+		color:transparent;
+		text-shadow: 1px 1px 1px transparent;
+	}
+}
+@-ms-keyframes blend {
+	0% {
+		color:white;
+		text-shadow: 1px 1px 1px black;
+	}
+	100% {
+		color:transparent;
+		text-shadow: 1px 1px 1px transparent;
+	}
+}
+@-o-keyframes blend {
+	0% {
+		color:white;
+		text-shadow: 1px 1px 1px black;
+	}
+	100% {
+		color:transparent;
+		text-shadow: 1px 1px 1px transparent;
+	}
+}
+@keyframes blend {
+	0% {
+		color:blue;
+		text-shadow: 1px 1px 1px black;
+	}
+	25% {}
+	50% {}
+	75% {}
+	100% {
+		color:transparent;
+		text-shadow: 1px 1px 1px transparent;
+	}
+}
+
+
+#status.blend-inOLD {
+	-webkit-transition: all  1s linear;
+	-moz-transition: all  1s linear;
+	-o-transition: all  1s linear;
+	-ms-transition: all  1s linear;
+	transition: all  1s linear;
+	color:rgba(255,255,255,1);
+}
+#status.blend-outOLD {
+	-webkit-transition: all  1s linear;
+	-moz-transition: all  1s linear;
+	-o-transition: all  1s linear;
+	-ms-transition: all  1s linear;
+	transition: all  1s linear;
+	color:rgba(0,0,0,0);
+}
+
+/* layer 2 zindex 20 video/audio, controls */
+video#podplayer {
+	position:absolute;
+	top:0;
+	left:0;
+	width:100%;
+	height:100%;
+	background-color:transparent;
+}
+audio#podplayer,#problem_indicate {
+	position:fixed;
+	top:auto;
+	bottom:0;
+
+
+	height:28px; /* FF */
+	height:25px; /* O */
+	height:30px; /* webkit/chrome, safari? */
+				/* IE? */
+	/*
+		we will set the height value of this and #chat with javascript because calc(100% - var audioElement.height) working only in webkit (#menue the same)
+	*/
+
+	width:auto;
+	height:auto;
+}
+#problem_indicate {
+	background-color: red;
+	z-index:1;
+}
+#controls {
+	width:100%;
+}
+#controls *{
+	float:left;
+}
+
+/* CHAT */
+#chat {
+	position:relative;
+	display:block;
+	margin:0;
+	/* problem with chrome/opera(25.0) resize an element smaller than set height and width value not possible --- looks like FF17.0.1, too */
+	height:100%;
+	width:100%;
+
+	overflow:auto;
+	overflow-y:scroll;
+	resize:both;
+	background-color:#F1F1F1;
+	background-color:rgba(241,241,241,0.7);
+	/*padding-top:3px;*/
+
+
+	/*-moz-box-shadow:  inset 0px 3px 3px -3px #000;
+	-webkit-box-shadow: inset 0px 3px 3px -3px #000;
+	box-shadow: inset 0px 3px 3px -3px #000; */
+
+	-moz-box-shadow: inset 3px 3px 3px -3px rgba(0, 0, 0, 0.7), inset -1px -1px 3px -3px rgba(0, 0, 0, 1);
+	-webkit-box-shadow: inset 3px 3px 3px -3px rgba(0, 0, 0, 0.7), inset -1px -1px 3px -3px rgba(0, 0, 0, 1);
+	box-shadow: inset 3px 3px 3px -3px rgba(0, 0, 0, 0.7), inset -1px -1px 3px -3px rgba(0, 0, 0, 1);
+
+	/* prevent the stupid preselect of all kinds of elements by doubleclick in empty chat */
+	-webkit-user-select: none; /* Chrome/Safari now opera too */
+	-moz-user-select: none; /* works in Firefox 21 - don't use -moz-none it makes more problems as resolves it */
+	-ms-user-select: none; /* IE10+ */
+
+	/* Rules below not yet implemented in browsers */
+	-o-user-select: none;
+	user-select: none;
+}
+#chat p {
+	margin:1em;
+		-webkit-user-select: text; /* Chrome/Safari */
+-moz-user-select: text; /* Firefox */
+-ms-user-select: text; /* IE10+ */
+
+/* Rules below not implemented in browsers yet */
+-o-user-select: text;
+user-select: text;
+}
+#chat p .nick {
+	font-weight:bold;
+}
+#chat p .msg {
+	color:black;
+}
+
+
+
+
+
+
+.overlayzzz{
+	position:absolute;
+	top:0;
+	left:0;
+	width:100%;
+	height:100%;
+}
+
+#menue {
+	width:100%;
+	height:auto;
+	transition: all 1.5s ease 0.1s;
+}
+#menue:after {
+	content: ".";
+	display: block;
+	height: 0;
+	clear: both;
+	visibility: hidden;
+}
+#menue.hidew {
+	overflow:hidden;
+	width:2.3em;
+
+}
+#menue.hideh {
+	overflow:hidden;
+	height:2.5em;
+
+}
+
+
+
+/*
+#busy {
+	position:absolute;
+	display:block;
+	width: 100%;
+	height: 100%;
+	color: red;
+	font-size: 10em;
+	background-color: black;
+}
+*/
+
+#dumpmetadata_box dt {
+}
+
+
+
+#menue ul li {
+/*
+	-webkit-transition: all 1s linear;
+	-moz-transition: all 1s linear;
+	-o-transition: all 1s linear;
+	-ms-transition: all 1s linear;
+	transition: all 1s linear;
+*/
+}
+
+
+#interface {
+	/*
+	position:fixed;
+	left:66%;
+	border:solid 1px red;
+	width:33%;
+	height:99%;
+	overflow:auto;
+	overflow-y:scroll;
+	resize:none;
+	*/
+}
+
+
+
+
+
+
+#layer,
+#layer_audio {
+	position:fixed;
+	height:100%;
+	width:100%;
+	background-color:black;
+	top:0;
+	left:0;
+	color:white;
+}
+#layer_audio {
+}
+
+#viewcontent {
+
+}
+
+#playerfield {
+
+}
+
+/*
+#inyourface {
+	position:fixed;
+	-moz-transition:font-size 1s, color 1s;
+	margin:auto;
+	text-align:center;
+	top:0;
+	bottom:auto;
+	right:0;
+	left:auto;
+	width:auto;
+	height:auto;
+}
+
+#inyourface a {
+	display:block;
+}
+*/
+
+videoxxx,
+audioxxx {
+	position:relative;
+	display:block;
+	margin:0;
+	padding:0;
+	height:100%;
+	width:100%;
+
+	/*overflow:auto;
+	overflow-y:scroll;
+	resize:both;*/
+
+	/*-moz-transition:poster 0.5s, video 0.5s linear 0.1s;
+	-webkit-transition:poster 0.5s, video 0.5s linear 0.1s -webkit-transform 1s;
+	-o-transition:background-color 0.5s, color 0.5s linear 0.1s;
+	transition:poster 0.5s, video 0.5s linear 0.1s;*/
+}
+
+#metainfo {
+/*	position:absolute;
+	display:block;
+	top:0;
+	left:0;
+	width:auto;
+	height:auto;
+	padding:1%;
+	font:normal bold 14px/1.4 SourceSansPro, "Trebuchet MS", Trebuchet, System, Tahoma, "Tahoma MS", "Arial MS", Verdana, Arial, sans-serif;
+	color:#F1F1F1;
+	text-shadow: 1px 1px 2px #000000;*/
+}
+
+
+
+ul.menue {
+	position:relative;
+	display:block;
+	list-style:none;
+	list-style-position:inside;
+	padding:0;
+	margin:0;
+	height:auto;
+	width:auto;
+	color:#F1F1F1;
+	background-color: #FF0;
+}
+ul.menue:after {
+	content: ".";
+	display: block;
+	height: 0;
+	clear: both;
+	visibility: hidden;
+}
+
+ul.menue li {
+	position:relative;
+	display:block;
+	float:left;
+	padding:0;
+	margin:0;
+	height:auto;
+	width:auto;
+	background: -moz-linear-gradient(top, #5A5A5A 90%, #F1F1F1 100%);
+	background: -webkit-linear-gradient(top, #1F1F1F 90%, #F1F1F1 100%);
+	background: -ms-linear-gradient(top, #1F1F1F 90%, #F1F1F1 100%);
+	background: -o-linear-gradient(top, #1F1F1F 90%, #F1F1F1 100%);
+	background: linear-gradient(to bottom, #1F1F1F 90%, #F1F1F1 100%);
+	background: linear-gradient(top, #1F1F1F 90%, #F1F1F1 100%);
+
+	transition: width 2s;
+	-moz-transition: width 2s;
+}
+ul.menue li:hover {
+
+}
+
+ul.menue li:last-child {
+	clear:right;
+	/*padding:7px;*/
+}
+
+ul.menue li a {
+	position:relative;
+	display:block;
+	text-decoration: none;
+
+	padding:7px;
+	color:#F1F1F1;
+
+	border-right:solid 1px #F1F1F1;
+}
+
+ul.menue li a:hover {
+	text-decoration: underline;
+}
+
+ul.menue li label {
+	position:relative;
+	display:block;
+	white-space:nowrap;
+	padding:7px;
+	margin:0;
+
+}
+
+ul.menue li label input {
+	position:relative;
+	display:inline;
+	border:solid 0px black;
+	margin:0;
+	padding:0 3px 0 0;
+	text-align: right;
+	width:76px;
+	height:auto;
+	-moz-transition:background-color 0.5s, color 0.5s linear 0.1s;
+	-webkit-transition:background-color 0.5s, color 0.5s linear 0.1s;
+	-o-transition:background-color 0.5s, color 0.5s linear 0.1s;
+	transition:background-color 0.5s, color 0.5s linear 0.1s;
+
+	background-color:transparent;
+	color:#F1F1F1;
+}
+
+ul.menue li label input:focus,
+ul.menue li label input:hover {
+	background-color:#F1F1F1;
+	color:#0F0F0F;
+}
+
+table#nicklist_table_box {
+	background-color: #F1F1F1;
+}
+table#nicklist_table_box tr td {
+	border-bottom: 1px solid black;
+}
+table#nicklist_table_box tr td:nth-child(2n) {
+	text-align:right;
+}
+table#nicklist_table_box tr td a {
+	display:block;
+	text-decoration:none;
+}
+table#nicklist_table_box tr td a:hover {
+	text-decoration:underline;
+}
+
+
+
+</style>
+<script type="text/javascript">
+
+// SOME HELPER
+
+// utf8_decode helps for some strange issue (iso to unicode viseversa) in Binary data -- posible other solution with hidden input to paste and read again but this works and without dom manipulation
+function utf8_decode (str_data) {
+    // Converts a UTF-8 encoded string to ISO-8859-1
+    //
+    // version: 1109.2015
+    // discuss at: http://phpjs.org/functions/utf8_decode    // +   original by: Webtoolkit.info (http://www.webtoolkit.info/)
+    // +      input by: Aman Gupta
+    // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // +   improved by: Norman "zEh" Fuchs
+    // +   bugfixed by: hitwork    // +   bugfixed by: Onno Marsman
+    // +      input by: Brett Zamir (http://brett-zamir.me)
+    // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+    // *     example 1: utf8_decode('Kevin van Zonneveld');
+    // *     returns 1: 'Kevin van Zonneveld'
+	var tmp_arr = [],
+        i = 0,
+        ac = 0,
+        c1 = 0,
+        c2 = 0,        c3 = 0;
+
+    str_data += '';
+
+    while (i < str_data.length) {        c1 = str_data.charCodeAt(i);
+        if (c1 < 128) {
+            tmp_arr[ac++] = String.fromCharCode(c1);
+            i++;
+        } else if (c1 > 191 && c1 < 224) {            c2 = str_data.charCodeAt(i + 1);
+            tmp_arr[ac++] = String.fromCharCode(((c1 & 31) << 6) | (c2 & 63));
+            i += 2;
+        } else {
+            c2 = str_data.charCodeAt(i + 1);            c3 = str_data.charCodeAt(i + 2);
+            tmp_arr[ac++] = String.fromCharCode(((c1 & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+            i += 3;
+        }
+    }
+    return tmp_arr.join('');
+}
+
+
+/**
+	Why the uniChars function?
+	Because i never trust the defined charset in Metadata again!
+**/
+function uniChars (stringArray) {
+
+/**
+			UTF-8 Wertebereich 				Bedeutung
+		Binär 	Hexadezimal Dezimal
+00000000–01111111 	00-7F 	0-127 		Ein-Byte lange Zeichen, deckungsgleich mit US-ASCII.
+10000000–10111111 	80-BF 	128-191 	Zweites, drittes oder viertes Byte einer Bytesequenz.
+11000000–11000001 	C0-C1 	192-193 	Start einer 2 Byte langen Sequenz, welche den Codebereich aus 0 bis 127 abbildet, unzulässig
+11000010–11011111 	C2-DF 	194-223 	Start einer 2 Byte langen Sequenz
+11100000–11101111 	E0-EF 	224-239 	Start einer 3 Byte langen Sequenz
+11110000–11110100 	F0-F4 	240-244 	Start einer 4 Byte langen Sequenz (Inklusive der Codebereiche von 110000 bis 13FFFF)
+11110101–11110111 	F5-F7 	245-247 	Beschränkt von der RFC 3629: Start einer 4 Byte langen Sequenz für Codebereich über 140000
+11111000–11111011 	F8-FB 	248-251 	Beschränkt von der RFC 3629: Start einer 5 Byte langen Sequenz
+11111100–11111101 	FC-FD 	252-253 	Beschränkt von der RFC 3629: Start einer 6 Byte langen Sequenz
+11111110–11111111 	FE-FF 	254-255 	Ungültig. In der ursprünglichen UTF-8-Spezifikation nicht definiert.
+**/
+
+	// should works on ascii iso utf8 utf16 as LE and BE with decimal numbers --- NOT WORKING WITH UTF-32 - possible some iso chars wrong -  single byte gt 127 (TODO TEST e.g. euro symbol)
+	var tempchar = [];
+	var chars = '';
+	var length = stringArray.length;
+
+	for (var i = 0, end = length; i < end; i++)
+	{
+
+		// multi byte LE
+		if (stringArray[i] > 193 && stringArray[i] < 224)
+		{// 2 byte
+			chars += String.fromCharCode(stringArray[i]+stringArray[i+1]);
+			i = i+2;
+			continue;
+		}
+
+		if (stringArray[i] > 223 && stringArray[i] < 240)
+		{// 3 byte
+			chars += String.fromCharCode(stringArray[i]+stringArray[i+1]+stringArray[i+2]);
+			i = i+3;
+			continue;
+		}
+
+		if (stringArray[i] > 239 && stringArray[i] < 245)
+		{// 4 byte
+			chars += String.fromCharCode(stringArray[i]+stringArray[i+1]+stringArray[i+2]+stringArray[i+3]);
+			i = i+4;
+			continue;
+		}
+
+		// multi byte BE
+		if (stringArray[i] > 127 && stringArray[i] < 192)
+		{
+			tempchar = [];
+			while (stringArray[i] > 127 && stringArray[i] < 192)
+			{
+				tempchar.push(stringArray[i]);
+				i++;
+			}
+			tempchar.push(stringArray[i+1]);
+			tempchar.reverse();
+			switch (tempchar.length)
+			{
+				case 2:
+					chars += String.fromCharCode(tempchar[0]+tempchar[1]);
+				break;
+				case 3:
+					chars += String.fromCharCode(tempchar[0]+tempchar[1]+tempchar[2]);
+				break;
+				case 4:
+					chars += String.fromCharCode(tempchar[0]+tempchar[1]+tempchar[2]+tempchar[3]);
+				break;
+			}
+
+			i = i+2;
+			continue;
+		}
+
+		// single byte char
+		// is FF FE Little Endian single char
+		if (stringArray[i] < 128 && stringArray[i] != 0)
+		{
+			chars += String.fromCharCode(stringArray[i]);
+
+			//if equal US-ASCII as multybyte (utf-16LE)
+			while (stringArray[i+1] == 0)
+			{
+				i++;
+			}
+			continue;
+		}
+
+		// is FE FF Big Endian - beginning 0  equal US-ASCII as 2 bytes (utf-16BE)
+		if (stringArray[i] == 0)
+		{
+			// more as one zero is strange
+			while (stringArray[i] == 0)
+			{
+				i++;
+			}
+
+			if (stringArray[i] < 128)
+			{ // single byte char
+				chars += String.fromCharCode(stringArray[i]);
+				i++;
+				continue;
+			}
+			else if (stringArray[i] > 244)
+			{ // mostly BOM FF FE or FE FF stuff in the middle of string ;(
+				//chars += String.fromCharCode(32);
+				i++;
+				continue;
+			}
+			else
+			{ // multi byte gt 2 byte with beginning 0 ??? mhhh
+				alert("OHHHHHHH DAMN, ALL BROKEN - NOT A REGULAR CHARCODE! wrong start position of stringArray? UTF-32? not decimal values [0-255]? check for updates in your taggging  tool/software?");
+				break;
+				return false;
+			}
+		}
+
+		// ignore Chars
+		if (stringArray[i] > 244) //0xF4
+		{
+			chars += String.fromCharCode(32);
+			i++;
+			continue;
+		}
+	} //for end
+	return chars;
+}
+
+
+if (!String.fromCodePoint) {// NOT USED
+    /*!
+    * ES6 Unicode Shims 0.1
+    * (c) 2012 Steven Levithan <http://slevithan.com/>
+    * MIT License
+    */
+    String.fromCodePoint = function fromCodePoint () {
+        var chars = [], point, offset, units, i;
+        for (i = 0; i < arguments.length; ++i) {
+            point = arguments[i];
+            offset = point - 0x10000;
+            units = point > 0xFFFF ? [0xD800 + (offset >> 10), 0xDC00 + (offset & 0x3FF)] : [point];
+            chars.push(String.fromCharCode.apply(null, units));
+        }
+        return chars.join("");
+    }
+}
+
+// String prototyping stuff
+String.prototype.invisibleChars =  ' \f\n\r\t\v​\u00A0\u1680​\u180e\u2000​\u2001\u2002​\u2003\u2004​\u2005\u2006​\u2007\u2008​\u2009\u200a​\u2028\u2029​\u2028\u2029​\u202f\u205f​\u3000';// list for that kind of whitespaces - unicode save
+String.prototype.trim = String.prototype.trim || function () {
+	/**
+		strange issue on begining of testing with object/string definition (never seen again; to early in the morning?) but for all kind of prolbem again:
+		Merkwürdiger fehler am Anfang des Testens mit Object/String Definitionen (fehler trat nicht mehr auf; Zu früh am Morgen?) Aber für alle fälle, wenn das Problem wieder auftritt:
+
+		1. be sure it is a string not an object
+
+		e.g.:
+		var str = this.toString();
+		typeof str === string
+		and:
+		var str = new Sting(this.toString());
+		typeof str === object
+
+		2. use "str = str.replace..." instead "return str.replace..." in other case posible you lost the replaced stuff becouse the not modifyd object.toString will returned (or something what ever it was)
+
+		e.g.:
+		str = str.replace(/^\s+|\s+$/g,'');
+		return str;
+	**/
+	return this.trimLeft().trimRight();
+};
+String.prototype.trimLeft = String.prototype.ltrim = String.prototype.trimLeft || function () {
+	var exp = new RegExp('^['+this.invisibleChars+']+');
+	return this.replace(exp,'');
+};
+String.prototype.trimRight = String.prototype.rtrim = String.prototype.trimRight || function () {
+	var exp = new RegExp('['+this.invisibleChars+']+$');
+	return this.replace(exp,'');
+};
+String.prototype.trimNice = String.prototype.nicetrim = function () {
+	// remove all whitespaces from begin and end of string; change all kind of whitespaces to only one leterspace between none whitespace chars
+	var exp = new RegExp('['+this.invisibleChars+']+','g');
+	return this.trim().replace(exp,' ');
+};
+String.prototype.trimFull = String.prototype.fulltrim = function () {
+	// remove all kind of whitespaces
+	var exp = new RegExp('['+this.invisibleChars+']','g');
+	return this.replace(exp,'');
+};
+
+
+
+// for preselected choice for input file
+function checkFileTypeSupport (tag)
+{
+	var tag = (tag == 'audio' ? 'audio' : 'video');
+	var suppString = '';
+	var test = document.createElement(tag);
+
+	if ( !!(test.canPlayType(tag+'/mp4;').replace(/no/, '')) ) suppString += ','+tag+'/mp4';
+
+	if ( !!(test.canPlayType(tag+'/ogg;').replace(/no/, '')) ) suppString += ','+tag+'/ogg';
+
+	if ( !!(test.canPlayType(tag+'/webm;').replace(/no/, '')) ) suppString += ','+tag+'/webm';
+
+	if ( !!(test.canPlayType(tag+'/mpeg;').replace(/no/, '')) ) suppString += ','+tag+'/mpeg';
+
+	if ( !!(test.canPlayType(tag+'/wav;').replace(/no/, '')) ) suppString += ','+tag+'/wav';
+
+	//alert(suppString.replace(',', ''));
+	return suppString.replace(',', '');
+};
+
+
+// NOW WE CAN!
+function syncPodChat ()
+{
+	var that = this;
+
+	//this.debugCon = false; // console MSG (no more stats)
+
+	// DEFAULT SETTINGS
+	this.difTime = -61; // value in seconds;  for chatLog synchronizing
+
+	this.usePlayer = false; // set the player-id from your dom (audio/video tag) you want to sync; or use false for a new player [this version used player with id 'podplayer']
+	//this.fileType = false;
+
+	this.playerArt = 'audio'; // set 'audio' or 'video'; if "usePlayer" has a player-id it will be set for you automatic (in this case i hope you use audio or video -tag) [this version used only audio]
+
+	this.podFile = '' || [] || function (){}; // one file as src string or multi sources as array; will be ignored if "usePlayer" has a player-id or function selectPodFile() is used
+
+	this.chatlogFile = '' || function (){}; // string of filename from your chatlog or use this.selectChatlogFile()
+	//chatlog
+
+	/* Some ID settings to define where Dom-buildings like table tr td ...,ul li ... will be placed in HTML PAGE */
+	this.toInsert = {
+		chatlog: 'chat', //  where entrys insert from chatlogObject by syncing audio/video
+		metadata: 'metadata', // where selected entrys will filled from metadataObject by metadataReady-event from audio/video analyses (audio/video title,date,tracknumber,artists,album see function readMetadata() or metadataReady()-function)
+		menue: 'menue', // will be there insert  ul (li a)*n with all possible stuff see below
+
+		// some possilbe menue functions below
+
+		// chatlogBuildings
+		nicklist: 'chat',
+		linklist: 'chat',
+		dumplog: 'chat',
+
+		// metadataBuildings
+		chapters: 'chat',
+		shownotes: 'chat',
+		dumpmeta: 'chat'
+	};
+
+
+	var chatlogObject = {}; // will be filled from xxx.log.html in M3d1c5-style for more info see chatlogReady()-function;
+	/* chatlogObject will looks like this:
+	{
+		'nicks': {
+			nick: { // name in chat
+				'color': color,
+				'entrys': [entrys.id,entrys.id,entrys.id,...]
+			},
+			...
+		},
+
+		'entrys': {
+			id: {
+				'nick': nicks.nick,
+				'text': text,
+				'timestamp': timestamp
+			},
+			...
+		},
+
+		'timestamps': {
+			timestamp : { //-00:50 , 00:04 ...
+				'entrys':[entrys.id,entrys.id,entrys.id,...]
+			},
+			...
+		}
+	}
+	*/
+
+	//this.sync = true; // Primär for Firefox Duration/Seeking Workaround [not yet used]
+
+	var metaObject = {
+
+		cover: {
+			present: false,
+			type: '', // data:image/jpeg or image/png;base64,
+			base64: '' // base64 encoded image
+		},
+
+		chapters: {
+			present: false,
+			ids: [] // [1,2,3...n]
+			/** SIMMILAR FOLLOW
+			metaObject.chapters.[id].txt = '';
+			metaObject.chapters.[id].timeHMSfloat = ''; // FOR VIEW
+			metaObject.chapters.[id].timeMillisec = ''; // BASE
+			metaObject.chapters.[id].timeSecFloat = ''; // FOR SET PLAYER TIME
+			**/
+		},
+
+		shownotes: { // v0.2 not implement yet
+			present: false,
+			ids: [] // [1,2,3...n]
+			/** SIMMILAR FOLLOW
+			metaObject.shownotes.[id].header = 'false'; // id.header is not realy mean header of the id specific shownote - it means that come BEFORE this.shownotes[id].text and it is a "must NOT have"; Default false
+			metaObject.shownotes.[id].txt = '';
+			metaObject.shownotes.[id].timeHMSfloat = ''; // FOR VIEW
+			metaObject.shownotes.[id].timeMillisec = ''; // BASE
+			metaObject.shownotes.[id].timeSecFloat = ''; // FOR SET PLAYER TIME
+			**/
+		},
+
+		defaults: {
+			title: '',
+			album: '',
+			tracknumber: '',
+			artist: '',
+			rights: '',
+			license: '',
+			genre: '',
+			date: ''
+		},
+
+		others: { // keytype => value, n --- mp4 empty
+			test: 'test'
+		}
+
+	};
+
+	this.selectChatLog = function ()
+	{
+		if ( !(window.File && window.FileReader && window.Blob && window.FileList))
+		{
+			alert('The File APIs are not fully supported in this browser. Change your Browser. Or use a copy of this html and modify the code for local files (more information in source-code description near the end of body)');
+			return false;
+		}
+
+		function handleFileSelect (evt)
+		{
+			var files = evt.target.files;
+
+			for (var i = 0, f; f = files[i]; i++)
+			{
+				alert(f.type);
+				if (f.type && !f.type.match('text/html'))
+				{
+					alert('Wrong Log File Format! Use HTML from http://blog.m3d1c5.org');
+					return false;
+				}
+
+				var reader = new FileReader();
+					reader.onerror = fileApiErrorHandler;
+
+					reader.onload = (function(theFile)
+					{
+						return function(e)
+						{
+							new logAction().transferComplete(e.target.result);
+						};
+					})(f);
+
+					reader.readAsText(f);
+			}
+
+			document.getElementsByTagName('body')[0].removeChild(document.getElementById('layer'));
+		};
+
+		var layerDiv = document.createElement('div');
+			layerDiv.id = 'layer';
+
+		var fileSelect = document.createElement('input');
+			fileSelect.type = 'file';
+			fileSelect.id = 'logfileID';
+			fileSelect.name = 'logfile';
+			fileSelect.accept = 'text/html';
+			fileSelect.addEventListener('change', handleFileSelect, false);
+
+		var textNode = document.createTextNode('Select your chatlog.html from your local drive; Supported Chatlogs from http://blog.m3d1c5.org');
+
+		var bodyApp = document.getElementsByTagName('body')[0];
+
+		layerDiv.appendChild(textNode);
+		layerDiv.appendChild(fileSelect);
+		bodyApp.appendChild(layerDiv);
+
+	};
+
+	this.selectPodFile = function ()
+	{
+		if ( !(window.File && window.FileReader && window.Blob && window.FileList) )
+		{
+			alert('The File APIs are not fully supported in this browser. Try an another browser! Or use a local copy of this html and modify the code to use syncPodChat without FileApi(more information in source-code-description near the end of closed body tag)');
+			return false;
+		}
+
+		window.URL = (window.URL || window.webkitURL);
+
+		function handleFileSelect (evt)
+		{
+			var files = evt.target.files;
+
+
+
+			var progress = document.createElement('progress');
+			layerDiv.appendChild(progress);
+			var file = null;
+			for (var i = 0, f; f = files[i]; i++)
+			{
+				file = f;
+				var test = document.createElement('audio');
+				if ( !!!(test.canPlayType(f.type).replace(/no/, '')) )
+				{
+					layerDiv.removeChild(progress);
+					alert(f.type + ' can not play on this browser.');
+					continue;
+				}
+
+				//var tt = '00 00 00 B4 27 B0 A0 17';
+
+				var reader = new FileReader();
+
+				reader.onerror = fileApiErrorHandler;
+
+				reader.onprogress = function(event)
+				{
+					if (event.lengthComputable)
+					{
+						progress.max = event.total;
+						progress.value = event.loaded;
+					}
+				};
+
+				reader.onloadend = function(e) {
+
+					if (e.target.readyState == FileReader.DONE)
+					{ // DONE == 2
+						/*
+						document.getElementById('byte_content').textContent = e.target.result;
+						document.getElementById('byte_range').textContent =
+						['Read bytes: ', start + 1, ' - ', stop + 1,
+						' of ', file.size, ' byte file'].join('');
+						*/
+						//alert(file.size);
+						// Accept-Ranges
+
+
+
+						//var readview = new Int8Array(e.target.result);
+						var readview = new Uint8Array(e.target.result);
+						readMetadata(readview);
+						//currentBuffer = readview;
+						//var readview = new Uint8ClampedArray(e.target.result);
+
+						//var readview = new Int16Array(e.target.result);
+						//var readview = new Uint16Array(e.target.result);
+
+						//var readview = new Int32Array(e.target.result);
+						//var readview = new Uint32Array(e.target.result);
+
+						//var readview = new Float32Array(e.target.result);
+						//var readview = new Float64Array(e.target.result);
+
+
+						//var readview = new Uint8Array(e.target.result);
+						//var readview = new Int16Array(e.target.result);
+						//var readview = new Int32Array(e.target.result);
+
+						//alert(getHexChunk(e.target.result, 0));
+
+						//var viewInHtml =  document.getElementById('hexGrid');
+					//	renderFile(e.target.result);
+
+						//alert(readview.length);
+						/*
+						var readviewChars = '';
+						var x = readview.length - 100000;
+						//for (x; x < parseInt((readview.length/4)*1); x++)
+						for (x; x < readview.length; x++)
+						{
+							readviewChars += fixedFromCharCode(readview[x]);
+							//readviewChars += readview[x];
+						}*/
+
+						//document.write(readviewChars);
+						//document.getElementById('textareal').innerHTML=readviewChars;
+						var player = document.getElementById(that.usePlayer);
+
+
+						//e.g. for FIREFOX
+						//Accept-Ranges: bytes
+						//content-range: 0-99998/99999
+
+						// firefox still needs Accept-Ranges and Content-Range from http-header for audio.duration (take a look at loadedmetadata eventlistener, there is a dirty workaround) !!!will fixed in FF 18 it is a check of local-cach problem!!!
+
+						var sourceEle = document.createElement('source');
+							//alert(e.target.type);
+							sourceEle.setAttribute('type', file.type);
+//alert(theFile.size -1);
+							if (!window.URL)
+							{// for Opera  < 12+ (and other)
+
+								alert('The File APIs are not fully supported in this browser. Try an another browser! Or use a local copy of this html and modify the code to use syncPodChat without FileApi(more information in source-code-description near the end of closed-body-tag)');
+								return false;
+
+								//sourceEle.setAttribute('src', e.target.result);
+							}
+							else
+							{
+								//sourceEle.src = window.URL.createObjectURL(theFile);
+								sourceEle.src = window.URL.createObjectURL(file);
+							}
+
+						player.appendChild(sourceEle);
+						playerAction();
+
+
+						// FIREFOX + OGG + (WEB)FILEAPI == NO DURATION BECOUSE NO SERVER INVOLVED !!!will fixed in FF 18!!!
+						var button = document.createElement('button');
+						button.innerHTML = 'Firefox duration/seeking workaround: In player controls, you can not fast forward? Click here and wait 5sec. (will fail on big file size; use a local copy and set files in &lt;audio&gt;&lt;source ... or set _02_SyncPodChat.podFile ...)';
+						button.onclick = function ()
+						{
+							//var player = (that.usePlayer ? that.usePlayer : that.usePlayer);
+							player.muted = true;
+							player.currentTime = 356400000;
+							player.play();
+							if (player.paused == false) player.pause();
+							player.currentTime = player.currentTime-5;
+							/* TODO:
+							if (player.currentTime < READ.DURATION.FROM.FILE -5)
+							{
+								// PUSH BUTTON AGAIN
+								// DON'T FORGET REMOVE ADDEVENTLISTENER
+
+								this.removeEventListener('ended',arguments.callee,false);
+								button.click();
+							}
+							*/
+
+							player.play();
+							player.addEventListener('ended', function() {
+								if(typeof(player.duration) == 'number')
+								{
+									player.currentTime = 0;
+									if (player.paused == false) player.pause();
+									player.muted = false;
+									this.removeEventListener('ended',arguments.callee,false);
+									alert('NOW YOU HAVE IT!');
+								}
+								else
+								{
+									this.removeEventListener('ended',arguments.callee,false);
+									button.click();
+								}
+							});
+						}
+
+						var interfaced = document.getElementById('interface');
+						if (interfaced)
+						{
+							interfaced.appendChild(button);
+						}
+
+
+					}
+				};
+
+				if (!window.URL)
+				{// for Opera < 12? (SAFARI on mac?)
+					// TO DO BUILD SLICES FOR OPERA
+
+					alert('The File APIs are not fully supported in this browser. Try an another browser! Or use a local copy of this html and modify the code to use syncPodChat without FileApi(more information in source-code-description near the end of closed body tag)');
+					return false;
+
+
+					//reader.readAsDataURL(f);
+				}
+				else
+				{
+
+							//f.slice = (
+							/*
+							if (f.webkitSlice) {
+							  var blob = f.webkitSlice(0, f.size);
+							} else if (f.mozSlice) {
+							  var blob = f.mozSlice(0, f.size);
+							}
+							*/
+					reader.readAsArrayBuffer(f);
+					//reader.readAsBinaryString(blob);
+				}
+				// delete test var
+			}
+		};
+
+		var layerDiv = document.createElement('div');
+			layerDiv.id = 'layer_audio';
+
+		var fileSelect = document.createElement('input');
+			fileSelect.type = 'file';
+			fileSelect.id = 'audiofileID';
+			fileSelect.name = 'audiofile';
+			fileSelect.accept = 'audio/*';
+			fileSelect.addEventListener('change', handleFileSelect, false);
+
+		var textNode = document.createTextNode('Select your AudioFile from your local drive; Some supported podcasts from http://metaebene.me');
+
+		var bodyApp = document.getElementsByTagName('body')[0];
+
+		layerDiv.appendChild(textNode);
+		layerDiv.appendChild(fileSelect);
+		bodyApp.appendChild(layerDiv);
+
+	};
+
+	this.start = function ()
+	{
+		// SOME PRE CHECKS/TESTS
+		if ( typeof(document.createElement('audio').canPlayType) != 'function' )
+		{
+			document.getElementsByTagName('body')[0].innerHTML = '<p>Your browser does not support native audio! Use another or download a new! Perhaps one of those: <a href="http://www.google.com/chrome">Chrome</a>, <a href="http://www.mozilla.org/firefox/new/">Firefox</a>... maybe? </p>';
+			return false;
+		}
+
+		//chatlog
+		if (this.chatlogFile && typeof(this.chatlogFile) != 'function')
+		{
+			new logAction().xmlReq();
+		}
+		if (this.podFile && typeof(this.podFile) != 'function' )
+		{
+			//alert(typeof(this.podFile));
+			playerAction();
+		}
+		//logAction();
+		//playerAction();
+		//interfaceAction();
+	};
+
+	function fileApiErrorHandler (evt)
+	{
+		var es = 'File Api Error: ';
+		switch (evt.target.error.code)
+		{
+			case evt.target.error.NOT_FOUND_ERR:
+				es += 'File Not Found! ';
+				break;
+			case evt.target.error.NOT_READABLE_ERR:
+				es += 'File is not readable! ';
+				break;
+			case evt.target.error.SECURITY_ERR:
+				es += 'Mostly Same-Origin-Policy problem with local files (file://) or cross-domain! ';
+			case evt.target.error.ABORT_ERR:
+				// USER ABORT / BROWSER RELOAD/UNLOAD
+				break; // noop
+
+case evt.target.error.IndexSizeError:
+	es += 'The index is not in the allowed range (e.g. thrown in a range object). ';
+				break;
+case evt.target.error.HierarchyRequestError:
+	es += 'The node tree hierarchy is not correct. ';
+				break;
+case evt.target.error.WrongDocumentError:
+	es += 'The object is in the wrong document . ';
+				break;
+case evt.target.error.InvalidCharacterError:
+	es += 'The string contains invalid characters. ';
+				break;
+case evt.target.error.NoModificationAllowedError:
+	es += 'The object can not be modified. ';
+				break;
+case evt.target.error.NotFoundError:
+	es += 'The object can not be found here. ';
+				break;
+case evt.target.error.NotSupportedError:
+	es += 'The operation is not supported ';
+				break;
+case evt.target.error.InvalidStateError:
+	es += 'The object is in an invalid state. ';
+				break;
+case evt.target.error.SyntaxError:
+	es += 'The string did not match the expected pattern. ';
+				break;
+case evt.target.error.InvalidModificationError:
+	es += 'The object can not be modified in this way. ';
+				break;
+case evt.target.error.NamespaceError:
+	es += 'The operation is not allowed by Namespaces in XML. ';
+				break;
+case evt.target.error.InvalidAccessError:
+	es += 'The object does not support the operation or argument. ';
+				break;
+case evt.target.error.TypeMismatchError:
+	es += 'The type of the object does not match the expected type. ';
+				break;
+case evt.target.error.SecurityError:
+	es += 'The operation is insecure. ';
+				break;
+case evt.target.error.NetworkError:
+	es += 'A network error occurred. ';
+				break;
+case evt.target.error.AbortError:
+	es += 'The operation was aborted. ';
+				break;
+case evt.target.error.URLMismatchError:
+	es += 'The given URL does not match another URL. ';
+				break;
+case evt.target.error.QuotaExceededError:
+	es += 'The quota has been exceeded. ';
+				break;
+case evt.target.error.TimeoutError:
+	es += 'The operation timed out. ';
+				break;
+case evt.target.error.InvalidNodeTypeError:
+	es += 'The node is incorrect or has an incorrect ancestor for this operation. ';
+				break;
+case evt.target.error.DataCloneError:
+	es += 'The object can not be cloned. ';
+				break;
+
+			default:
+				es += 'An error occurred reading this file. Mostly Same-Origin-Policy problem with local files (file://) ';
+		}
+		alert(es);
+	};
+
+	function playerAction ()
+	{
+
+		var getFileTypeFromExtension = function (file)
+		{
+			var fileExtension =  file.lastIndexOf('.');
+			fileExtension = file.slice(fileExtension+1);
+
+			var typeEXT = that.playerArt+'/';
+
+			switch (fileExtension.toLowerCase())
+			{
+
+				// Short telling: the only realy usefull mime types they are: audio,video/ogg,wav,webm,mpeg,mp4 (e.g. x-/application and ohter stuff and mimes makes more problems instead resolved it)
+
+				// in cases they not clear is audio or video or audio and video use video/* instead application/* (same by subtitles, text, 2d, 3d, grafics,urls or what ever stupid flash like parts stuff is in container)
+
+				// without "...;codecs=xxx" attributes they give you "maybe" type support or generell mime is def. NOT Supported; see opus for "probably"
+
+				/**
+					OGG
+					posible contain
+					...
+					for web related only vorbis (audio), theora (video) and opus (audio)
+				**/
+				case "ogg":
+					typeEXT += 'ogg';
+					break;
+				case "oga":
+					typeEXT = 'audio/ogg'; // posible audio codecs is vorbis or opus. If opus you should use opus as file extension. Of course flac,speex posible, too but not recommend on web. on the other hand take a look to http://labs.official.fm ;)
+					break;
+				case "ogv":
+					typeEXT = 'video/ogg';
+					break;
+				case "opus":
+					typeEXT = 'audio/ogg; codecs=opus'; // give "probably" support or def. not supported. Ogg is for the MOMENT the only container to use opus. recommend use .opus as file extension. fyi: Matroska  will follow. 2017: Android supports since 5.0 or 4.2 Opus! BUT: Only in MKV container! Android 7 or 7.1 should support Opus in Ogg container, too (drop mkv/opus support in A7?).
+					break;
+				case "ogx":
+					typeEXT += 'ogg'; // application/ogg;
+					break;
+
+				case "webm":
+					typeEXT += 'webm';
+					break;
+
+				/**
+					WAVE PCM (WAVE codec "1")
+				**/
+				case "wav":
+				case "wave":
+					typeEXT = 'audio/wav'; // some browser have problems with audio/wave (gecko preferred) or audio/x-wav or audio/x-pn-wav; recommend use audio/wav
+					break;
+
+				case "mp3":
+					typeEXT = 'audio/mpeg'; // audio/MPA, audio/mpa-robust
+					break;
+
+				case "mp4":
+					typeEXT += 'mp4'; // remember .mp4 is the only official spec. as container file extension. m4X stuff is primary apple bullshit becouse e.g. m4a should supports only aac and alac audio (mp4 supp. mp3, too) but it looks like they will more and more without complaint compilent from other programms with other codecs (m4a now means only audio is in file present). AND this is counteracted Apples Intension. In Other words: If your MP4 File container has mp3 codec stream/s, you MUST use .mp4 as file extension instead .m4a or other.
+
+					break;
+				case "m4a":
+					typeEXT = 'audio/mp4'; // audio/aac, audio/aacp --- AAC or ALAC (alac mime ehh i mean codec aacp)
+					break;
+				case "m4v":
+					typeEXT = 'video/mp4'; // video/x-m4v
+					break;
+
+				// some testings stuff
+				case "m4b": // audiobook with bookmarks
+					typeEXT = 'audio/mp4'; // audio/aac, audio/aacp --- AAC or ALAC
+					break;
+				case "m4p": // protected DRM AAC
+					typeEXT = 'audio/mp4';
+					break;
+				case "m4r": // ringtone iPhone
+					typeEXT = 'audio/mp4';
+					break;
+
+				// DIRTY TEST: mostly definitely NOT mp4 but... ;)
+				case "mov":
+					typeEXT += 'mp4'; // video/quicktime
+					break;
+				case "3gp":
+					typeEXT += 'mp4'; // video/3gpp
+					break;
+				case "3g2":
+					typeEXT += 'mp4'; // video/3gpp2
+					break;
+				case "m2v":
+					typeEXT += 'mpeg'; // video/mpeg
+					break;
+
+				/**
+					// SOME NOT NEEDED STUFF,
+					aiff,wma,
+					mpg,mpeg,mp1,mp2
+					avi,mkv,divx,xvid
+
+					// In future we want MKV!
+				**/
+
+				default:
+					typeEXT += '*';
+					break;
+			}
+
+			return typeEXT;
+		};
+
+		var errortimer = 0;
+		var holdErrors = "";
+		var onerror = function (e,index)
+		{
+
+			errortimer++;
+
+			if (e.type == 'error')
+			{
+				if (e.target.code == e.target.MEDIA_ERR_SRC_NOT_SUPPORTED)
+				{
+					//alert("\n YOUR AUDIO/VIDEO-FILE-TYPE IS NOT SUPPORTED IN THIS BROWSER: \n" + e.target.src);
+					holdErrors += "\n THIS AUDIO/VIDEO-FILE-TYPE IS NOT SUPPORTED IN YOUR BROWSER: \n" + e.target.src;
+				}
+			}
+
+			if (errortimer == index)
+			{
+				if (e.networkState == e.NETWORK_NO_SOURCE)
+				{
+					//alert("\n NO AUDIO/VIDEO-FILE-SOURCE TO PLAY ALL FAILED!");
+					holdErrors += "\n NO AUDIO/VIDEO-FILE-SOURCE PLAYABLE, ALL SOURCES FAILED!";
+					alert(holdErrors);
+				}
+			}
+		};
+
+		if (!that.usePlayer)
+		{
+			var player = document.createElement(that.playerArt);
+			if (typeof(that.podFile) != 'string')
+			{
+				for (var i = 0; i < that.podFile.length; i++)
+				{
+					var sourceEle = document.createElement('source');
+					sourceEle.setAttribute('src', that.podFile[i]);
+					sourceEle.setAttribute('type', getFileTypeFromExtension(that.podFile[i]));
+					sourceEle.addEventListener('error', function (e) {onerror(e,that.podFile.length);}, false);
+					player.appendChild(sourceEle);
+				}
+			}
+			else
+			{
+				player.setAttribute('src', that.podFile);
+				player.setAttribute('type', getFileTypeFromExtension(that.podFile));
+			}
+
+			player.setAttribute('controls', 'controls');
+			player.setAttribute('preload', 'auto');
+
+			// only usefull if the single src attribute on audio-tag used instead source elements
+			player.addEventListener('error', function (e) {onerror(e,1);}, false);
+
+			var appendToBody = document.getElementsByTagName('body')[0];
+			appendToBody.appendChild(player);
+		}
+		else
+		{
+			var player = document.getElementById(that.usePlayer);
+			that.playerArt = player.tagName.toLowerCase();
+			//if( that.podFile) alert(typeof(that.podFile));
+			if (that.podFile && typeof(that.podFile) != 'string')
+			{
+				for (var i = 0; i < that.podFile.length; i++)
+				{
+					var test = document.createElement(that.playerArt);
+					//if ( !!(test.canPlayType(getFileTypeFromExtension(that.podFile[i])).replace(/no/, '')) )
+					var test = true;
+					if (test == true);
+					{
+						var file = that.podFile[i];
+
+						var xhr = new XMLHttpRequest();
+						xhr.open('GET', file, true);
+						xhr.responseType = 'arraybuffer';
+
+						xhr.onload = function(e) {
+							var uInt8Array = new Uint8Array(this.response); // this.response == uInt8Array.buffer
+							// var byte3 = uInt8Array[4]; // byte at offset 4
+							//...
+							// alert(typeof uInt8Array); pffff array is an object
+							readMetadata(uInt8Array);
+						};
+
+						xhr.onreadystatechange = function (e)
+						{
+							if (xhr.readyState == 3) // HEADERS_RECEIVED (MOZ) or READYSTATE_LOADED (IE)
+							{
+								//console.log(xhr.getAllResponseHeaders() );
+								if (xhr.statusText == '') // 200 OK (MOZ) or OK (IE)
+								{
+									//alert('run as local file or offline');
+								}
+								else if (xhr.status == 200) {
+
+								}
+								///alert(xhr.statusText);
+							}
+						};
+						xhr.send();
+
+						player.setAttribute('src', file);
+						player.setAttribute('type', getFileTypeFromExtension(file));
+						player.addEventListener('error', function (e) {onerror(e);}, false);
+						player.onload = function ()
+						{
+							//alert("GELADEN ");
+						};
+
+						break;
+					} // if end
+				} // for end
+			}
+			else if (that.podFile  && typeof(that.podFile) == 'string')
+			{
+				player.setAttribute('src', that.podFile);
+				player.setAttribute('type', getFileTypeFromExtension(that.podFile));
+			}
+
+			player.setAttribute('controls', 'controls');
+			player.setAttribute('preload', 'auto');
+
+			// only usefull if the single src attribute on audio-tag used instead source elements
+			player.addEventListener('error', function (e) {onerror(e,1);}, false);
+
+			//var sources = player.getElementsByTagName('source');
+
+			// remember no error handling from here, on your own player ;=
+		}
+
+		//player.addEventListener('play', onplay, false); // use addEventListener for webkit/chrome!
+		//player.addEventListener('pause', onpause, false);
+		player.addEventListener('timeupdate', playerOnTimeupdateSyncChatlog, false);
+
+		player.addEventListener("loadedmetadata", function (_event)
+		{
+			var bodyApp = document.getElementsByTagName('body')[0];
+			var layerDiv = document.getElementById('layer_audio');
+			if(layerDiv)
+			{
+				bodyApp.removeChild(layerDiv);
+			}
+		},false);
+
+	}; // function playerAction end
+
+	function logAction ()
+	{
+		var thisLocAction = this;
+		this.transferComplete = function (chatlog)
+		{
+			/* some vars for stats */
+			var nonick = 0; // known as [Jon Dow]
+			var tableentrys = 0; // how many entrys in HTML
+			var objectentrys = 0; // how many entrys parsed from HTML entrys
+
+			//var user = 0; // how many user in this chatlog
+
+
+			var logBox = document.createElement('div');
+			logBox.setAttribute('id', 'logBox');
+			logBox.innerHTML = chatlog;
+
+			/* lets pre building some stuff for chatlogObject = {}; */
+			chatlogObject.nicks = {};
+			chatlogObject.entrys = {};
+			chatlogObject.timestamps = {};
+
+			var getTables = logBox.getElementsByTagName('table');
+
+			var ircLog = false;
+			for (var i = 0; i < getTables.length; i++)
+			{
+				if (getTables[i].className == 'irclog')
+				{
+					ircLog = getTables[i];
+					var getTRs = ircLog.getElementsByTagName('tr');
+					tableentrys = getTRs.length; // for stats
+					for (var i = 0; i < getTRs.length; i++)
+					{
+
+						var nick = getTRs[i].getElementsByTagName('th')[0];
+						if (!nick)
+						{
+							//continue;
+							nonick++; // for stats
+							nick = '[John Dow]';
+						}
+						else
+						{
+							nick = new String(nick.textContent).trim();
+						}
+
+						var timestamp = new String(getTRs[i].getElementsByTagName('td')[0].textContent).trim();
+						//remove + (plus) sign
+						timestamp = timestamp.replace(/\+/,'');
+
+						var text = getTRs[i].getElementsByTagName('td')[1];
+						if (nick == '[John Dow]')
+						{
+							var color = 'rgb(10,10,10)';
+						}
+						else
+						{
+							var color = text.style['color'];
+						}
+						text = new String(text.innerHTML).trim();
+
+						if (!chatlogObject.nicks[nick])
+						{
+							chatlogObject.nicks[nick] = {};
+							chatlogObject.nicks[nick].color = color;
+							chatlogObject.nicks[nick].entrys = [i];
+						}
+						else
+						{
+							chatlogObject.nicks[nick].entrys.push(i);
+						}
+
+						chatlogObject.entrys[i] = {};
+						chatlogObject.entrys[i].nick = nick;
+						chatlogObject.entrys[i].text = text;
+						chatlogObject.entrys[i].timestamp = timestamp;
+
+						if (!chatlogObject.timestamps[timestamp])
+						{
+							chatlogObject.timestamps[timestamp] = {};
+							chatlogObject.timestamps[timestamp].entrys = [i];
+						}
+						else
+						{
+							chatlogObject.timestamps[timestamp].entrys.push(i);
+						}
+						objectentrys++; // for stats
+					}
+					buildingMenue('chatlog');
+					break;
+				}
+			}
+			//var test='00:00';
+			//alert(chatlogObject.timestamps[test].entrys);
+
+			if (!ircLog)
+			{
+				alert('Uups, we have a problem! No irclog detected! If you not use this on a webserver, it is posible a Same-Origin-Policy problem with local files (file://) - mostly with Opera and Chrome.');
+				return false;
+			}
+
+			//this.syncAction;
+		};
+
+		this.xmlReq = function()
+		{
+			try
+			{
+				var reqLog = new XMLHttpRequest();
+
+				//reqLog.addEventListener('load', transferComplete, false); // OPERA FAILS!
+				reqLog.onreadystatechange = function ()
+				{
+					//alert(reqLog.readyState);
+					if (reqLog.readyState == 4)
+					{
+						thisLocAction.transferComplete(reqLog.responseText);
+						//alert(reqLog.responseText);
+					}
+				};
+				reqLog.open('GET', that.chatlogFile, true); //chatlog
+				reqLog.overrideMimeType('text/plain; charset=utf-8');
+				reqLog.send(null);
+			}
+			catch (e)
+			{
+				// OPERA AND CHROME DOESN'T SUPPORT XMLHTTPREQUEST ON LOCALFILES (file://) (SAME-ORIGIN-POLICY)
+				// THERE POSIBLE METHODS TO DO THIS
+				// USE A WEBSERVER LIKE XAMPP
+				// OR MAKE SOME SETTINGS
+				// OPERA: Set "Allow File XMLHttpRequest" with
+				// opera:config#UserPrefs|AllowFileXMLHttpRequest to disable this security check.
+				// CHROME: Open Chrome with parameter (only for test/develop not for web surfing and do not use this parameter with any addon/app start of Chrome!)
+				// --allow-file-access-from-files or
+				// -allow-file-access-from-files
+				alert(e);
+			}
+		};
+	};
+
+
+	var buildingMenueFirstCall = true;
+	var buildingMenue = function (build)
+	{
+		// create Menue if first call build ul and first li button and append/insert in DOM
+		if (buildingMenueFirstCall)
+		{
+			buildingMenueFirstCall = false;
+			var listMenue = document.createElement('ul');
+				listMenue.className = 'menue';
+
+			// show/hide Menue
+			var listPoint = document.createElement('li');
+			var listPointLink = document.createElement('a');
+				listPointLink.href = '#';
+				listPointLink.title = 'hide';
+				listPointLink.className = 'left';
+				listPointLink.onclick = function () {
+					this.className = (this.className == 'left' ? 'right' : 'left');
+					//this.href = (this.href == '#hide' ? '#reveal' : '#hide');
+					this.title = (this.title == 'hide' ? 'reveal' : 'hide');
+
+					function toggleClassName (obj,attrClassName)
+					{
+						//HELP
+						if (obj === 'help') {
+							return '(Object: DOM ELEMENT,String: className) --- set or remove explicid className of multiple classNames class attribute --- returned "removed" or "appended"';
+						}
+						//HELP
+						var rep = /\bregexp\b/
+						if (obj.className.match(attrClassName))
+						{
+							var rep = obj.className.match(' '+attrClassName)?' '+attrClassName:attrClassName;
+							obj.className = obj.className.replace(rep,'');
+							return 'removed';
+						}
+						else
+						{
+							obj.setAttribute('class', obj.getAttribute('class') + ' ' + attrClassName);
+							return 'appended';
+						}
+
+						// we will use "myclass" not " myclass" or "myclass  "
+						attrClassName = attrClassName.trimNice();
+						// should be found "myclass" and not "myclasstoo"
+						var exp = new RegExp('\\b' + attrClassName + '\\b'); // UTF8 save? class names should be ascii like 33-126 or something
+						// alternate use something with exp.exec(obj.getAttribute('class'))
+
+
+					}
+
+					var ele = document.getElementById(that.toInsert.menue);
+
+					/*
+					ele.addEventListener('transitionend',
+							function( event ) {
+								if (toggleClassName(ele,'hidex') == 'appended')
+								{
+									if (toggleClassName(ele,'hidey') == 'appended'){}
+								}
+							}, false );
+					*/
+
+					if (toggleClassName(ele,'arschlochbrowser') == 'appended')
+					{
+						if (toggleClassName(ele,'hidey') == 'appended')
+						{
+							ele.addEventListener('transitionend',
+							function( event ) {
+								if (toggleClassName(ele,'hidex') == 'appended')
+								{
+									if (toggleClassName(ele,'hidey') == 'appended'){}
+								}
+							}, false );
+							//if (toggleClassName(ele,'hidex') == 'appended'){}
+							//alert("JUP");
+						}
+					}
+					/*if (toggleClassName(ele,'hidey') == 'appended')
+					{
+						ele.addEventListener('transitionend',
+						function( event ) {
+							if (toggleClassName(ele,'hidex') == 'appended')
+							{
+
+							}
+						}, false );
+						//if (toggleClassName(ele,'hidex') == 'appended'){}
+						//alert("JUP");
+					}
+					else
+					{
+						//alert("NOPE");
+
+						ele.addEventListener('transitionend',
+								function( event ) {
+									if (toggleClassName(ele,'hidex') == 'appended')
+									{
+
+									}
+								}, false );
+
+
+					}*/
+
+					/*
+					var prepareList = document.getElementById(that.toInsert.menue).getElementsByTagName('li');
+					var i = 1;
+					var intV = setInterval(function(){showHideMenue()},25);
+					function showHideMenue()
+					{
+						if (i == prepareList.length)
+						{
+							clearInterval(intV);
+						}
+						else
+						{
+							if (prepareList[i].style.position != 'absolute')
+							{
+								prepareList[i].style.position = 'absolute';
+								prepareList[i].style.left = -999+'px';
+								if (document.getElementById(that.toInsert.menue).style.width != 'auto') document.getElementById(that.toInsert.menue).style.width = 'auto';
+							}
+							else
+							{
+								prepareList[i].style.position = 'relative';
+								prepareList[i].style.left = '';
+								if (document.getElementById(that.toInsert.menue).style.width != '100%') document.getElementById(that.toInsert.menue).style.width = '100%';
+							}
+							i++;
+						}
+					};
+					*/
+					return false;
+				};
+			listPoint.appendChild(listPointLink);
+			listMenue.appendChild(listPoint);
+			document.getElementById(that.toInsert.menue).insertBefore(listMenue,document.getElementById(that.toInsert.menue).firstChild);
+
+
+			// select audio file
+			var listPointPodFile = document.createElement('li');
+			var selectPodFile = document.createElement('input');
+				selectPodFile.type = 'file';
+				selectPodFile.id = 'audiofileID';
+				selectPodFile.name = 'audiofile';
+				selectPodFile.accept = 'audio/*';
+				//selectPodFile.addEventListener('change', handleFileSelect, false);
+				selectPodFile.onchange = function (evt) {
+					if ( !(window.File && window.FileReader && window.Blob && window.FileList) )
+					{
+						alert('The File APIs are not fully supported in this browser. Try an another browser!');
+						return false;
+					}
+					var firstCall = true;
+					//window.URL = (window.URL || window.webkitURL);
+					var files = evt.target.files;
+					var file = files[0];
+					var theResult = null;
+					function readBlob(opt_startByte, opt_stopByte) {
+
+						var startingByte = parseInt(opt_startByte) || 0;
+						var endingByte = parseInt(opt_stopByte) || file.size - 1;
+
+						var reader = new FileReader();
+
+						//var throwIT = function (obj) {return obj;};
+						reader.onloadend = function (e) {
+							if (e.target.readyState == FileReader.DONE) { // DONE == 2
+							//alert(e.target.result);
+								checkFirstFiewBytes(e.target.result);
+							}
+						};
+
+						if (file.slice) {
+							var blob = file.slice(startingByte, endingByte);
+						} else if (file.webkitSlice) {
+							var blob = file.webkitSlice(startingByte, endingByte);
+						} else if (file.mozSlice) {
+							var blob = file.mozSlice(startingByte, endingByte);
+						} else {
+							alert('Problem with File-Api! Try another browser!');
+							return false;
+						}
+						reader.readAsBinaryString(blob);
+
+					}
+
+					var checkFirstFiewBytes = function (result)
+					{
+						var test = (result[0] == 79);
+						alert(test);
+					};
+
+					if (firstCall)
+					{
+						firstCall = false;
+						readBlob(0,64);
+						//alert(theResult);
+						//check is ID3,vorbisComment,OpusTags or ftype (mp4)
+
+					}
+				};
+
+					listMenue.appendChild(listPointPodFile);
+			listPointPodFile.appendChild(selectPodFile);
+		}
+		else
+		{
+			//var listMenue = document.getElementById(that.toInsert.menue).getElementsByTagName('ul')[0];
+			var listMenue = document.getElementById(that.toInsert.menue).getElementsByTagName('ul');
+			for (num in listMenue)
+			{
+				if (listMenue[num].className == 'menue')
+				{
+					listMenue = listMenue[num];
+					break;
+				}
+			}
+		}
+
+		var listPoint = document.createElement('li');
+		var listPointLabel = document.createElement('label');
+		var listPointLink = document.createElement('a');
+			listPointLink.href = '#';
+			listPointLink.className = 'bott';
+
+			/*listPointLink.onmouseover = function ()
+			{
+				alert(this.innerHTML );
+				this.href = '#' + this.innerText;
+			};*/
+
+			listPointLink.onclick = function ()
+			{
+				return false;
+			};
+
+		if (build == 'metadata')
+		{
+			// dump metadata
+			var listPointLinkTextDumpMeta = document.createTextNode('Dump metadata ');
+			var listPointLinkDumpMeta = listPointLink.cloneNode(false);
+				listPointLinkDumpMeta.className = 'bott';
+				listPointLinkDumpMeta.onclick = function ()
+				{
+					// remove node
+					if (document.getElementById('dumpmetadata_box'))
+					{
+						document.getElementById('dumpmetadata_box').parentNode.removeChild(document.getElementById('dumpmetadata_box'));
+						listPointLinkDumpMeta.className = 'bott';
+						return false;
+					}
+
+					// insert node
+					listPointLinkDumpMeta.className = 'top';
+					var metadataDumpMetaBox = document.createElement('div');
+						metadataDumpMetaBox.id = 'dumpmetadata_box';
+						metadataDumpMetaBox.addEventListener('DOMNodeRemoved', function ()
+						{
+							listPointLinkDumpMeta.className = 'bott';
+						}, false);
+						document.getElementById(that.toInsert.dumpmeta).appendChild(metadataDumpMetaBox);
+
+					// build dumpmetadata Box
+					var metadataDumpMetaBoxDL = document.createElement('dl');
+
+
+					function extractionMetaObject (obj)
+					{
+						for (var b in obj)
+						{
+							var listDT = document.createElement('dt');
+							var listDTText = document.createTextNode(b+' ('+typeof(obj[b])+'): ');
+							listDT.appendChild(listDTText);
+							metadataDumpMetaBoxDL.appendChild(listDT);
+
+							if (typeof(obj[b]) == 'object')
+							{
+								extractionMetaObject(obj[b]);
+							}
+							else
+							{
+
+								var listDD = document.createElement('dd');
+								var listDDText = document.createTextNode(obj[b]);
+								listDD.appendChild(listDDText);
+								metadataDumpMetaBoxDL.appendChild(listDD);
+							}
+						}
+					}
+
+					extractionMetaObject(metaObject);
+
+					metadataDumpMetaBox.appendChild(metadataDumpMetaBoxDL);
+
+					return false;
+				}; // function onclick end
+
+				// insert menue point
+				listPointLinkDumpMeta.appendChild(listPointLinkTextDumpMeta);
+				var metadataDumpMeta = listPoint.cloneNode(false);
+				metadataDumpMeta.appendChild(listPointLinkDumpMeta);
+				listMenue.insertBefore(metadataDumpMeta, listMenue.firstChild.nextSibling);
+
+
+			// shownotes
+			if (metaObject.shownotes.present)
+			{
+				// NOT YET IMP.
+			}
+
+
+
+			// chapters
+			if (metaObject.chapters.present)
+			{
+				var listPointLinkTextChapters = document.createTextNode('Chapters ');
+				var listPointLinkChapters = listPointLink.cloneNode(false);
+					listPointLinkChapters.className = 'bott';
+					listPointLinkChapters.onclick = function ()
+					{
+						// remove node
+						if (document.getElementById('chapters_box'))
+						{
+							document.getElementById('chapters_box').parentNode.removeChild(document.getElementById('chapters_box'));
+							listPointLinkChapters.className = 'bott';
+							return false;
+						}
+
+						// insert node
+						listPointLinkChapters.className = 'top';
+						var metadataChaptersBox = document.createElement('div');
+							metadataChaptersBox.id = 'chapters_box';
+							metadataChaptersBox.addEventListener('DOMNodeRemoved', function ()
+							{
+								listPointLinkChapters.className = 'bott';
+							}, false);
+							document.getElementById(that.toInsert.chapters).appendChild(metadataChaptersBox);
+
+						// build chaptersBox
+						var metadataChaptersBoxOL = document.createElement('ol');
+
+						for (var x in metaObject.chapters.ids)
+						{
+							var listLI = document.createElement('li');
+
+							var chapTXT = metaObject.chapters[metaObject.chapters.ids[x]].name;
+							var chapHMS = makeTime('HH:MM:SS.MS',metaObject.chapters[metaObject.chapters.ids[x]].time);
+							//var chapHMS = metaObject.chapters[metaObject.chapters.ids[x]].time('HH:MM:SS.MS');
+							var chapSEC = makeTime('S.MS',metaObject.chapters[metaObject.chapters.ids[x]].time);
+							//var chapSEC = metaObject.chapters[metaObject.chapters.ids[x]].time('S.MS');
+
+							var listA = document.createElement('a');
+							listA.innerHTML = chapHMS;
+							listA.onclick = function ()
+							{
+								document.getElementById('podplayer').currentTime = parseFloat(this.id.substring(1));
+								return false;
+							}
+							listA.id = '_'+chapSEC;
+							listA.href = '#'+chapSEC;
+
+							var chapTxtNode = document.createTextNode(chapTXT);
+							var brakANode = document.createTextNode('[');
+							var brakBNode = document.createTextNode('] ');
+							listLI.appendChild(brakANode);
+							listLI.appendChild(listA);
+							listLI.appendChild(brakBNode);
+							listLI.appendChild(chapTxtNode);
+
+							metadataChaptersBoxOL.appendChild(listLI);
+
+						}
+						metadataChaptersBox.appendChild(metadataChaptersBoxOL);
+
+
+
+						return false;
+					};
+
+
+				// insert menue point
+				listPointLinkChapters.appendChild(listPointLinkTextChapters);
+				var listPointChapters = listPoint.cloneNode(false);
+				listPointChapters.appendChild(listPointLinkChapters);
+				listMenue.insertBefore(listPointChapters, listMenue.firstChild.nextSibling);
+			} // chapters end
+
+		} // metadata end
+
+
+		// building Chatlog Menue chatlogAction
+		if (build == 'chatlog')
+		{
+			// nicklist view sortable table of Nicks and there entrys
+			var listPointLinkTextNicklist = document.createTextNode('Nicklist ');
+			var listPointLinkNicklist = listPointLink.cloneNode(false);
+				listPointLinkNicklist.onclick = function ()
+				{
+					// remove node
+					if (listPointLinkNicklist.className == 'top')
+					{
+						if (document.getElementById('nicklist_table_box'))
+						{
+							document.getElementById('nicklist_table_box').parentNode.removeChild(document.getElementById('nicklist_table_box'));
+						}
+						listPointLinkNicklist.className = 'bott';
+						return false;
+					}
+
+					// insert node
+					listPointLinkNicklist.className = 'top';
+					var nicklistTable = document.createElement('table');
+						nicklistTable.id = 'nicklist_table_box';
+						nicklistTable.addEventListener('DOMNodeRemoved', function ()
+						{
+							listPointLinkNicklist.className = 'bott';
+						}, false);
+						document.getElementById(that.toInsert.nicklist).appendChild(nicklistTable);
+
+					var nicklistTR = document.createElement('tr');
+					var nicklistTH = document.createElement('th');
+					var nicklistTD = document.createElement('td');
+					var nicklistA  = document.createElement('a');
+						nicklistA.href = '#';
+
+					var nicklistTRsort = nicklistTR.cloneNode(false);
+					var nicklistTHsortNick = nicklistTH.cloneNode(false);
+					var nicklistTHsortEntry = nicklistTH.cloneNode(false);
+					var nicklistAsortNick = nicklistA.cloneNode(false);
+					var nicklistAsortEntry = nicklistA.cloneNode(false);
+					nicklistTable.appendChild(nicklistTRsort);
+					nicklistTRsort.appendChild(nicklistTHsortNick);
+					nicklistTRsort.appendChild(nicklistTHsortEntry);
+					nicklistTHsortNick.appendChild(nicklistAsortNick);
+					nicklistTHsortEntry.appendChild(nicklistAsortEntry);
+					nicklistAsortNick.appendChild(document.createTextNode('Sort Nicks '));
+					nicklistAsortEntry.appendChild(document.createTextNode('Sort Entrys '));
+
+					nicklistAsortNick.onclick = function ()
+					{
+						var tablelist = nicklistTable.getElementsByTagName('tr');
+						if (this.className == 'bott')
+						{
+							this.className = 'top'
+							for (var i = 0; i < tablelist.length-1; i++)
+							{
+								for (var j = i+1; j < tablelist.length; j++)
+								{
+									if  (
+											tablelist[i].getElementsByTagName('td')[0] &&
+											tablelist[j].getElementsByTagName('td')[0].getElementsByTagName('a')[0].innerHTML.toLowerCase() >
+											tablelist[i].getElementsByTagName('td')[0].getElementsByTagName('a')[0].innerHTML.toLowerCase()
+										)
+									{
+										nicklistTable.insertBefore(tablelist[j],tablelist[i]);
+									}
+								}
+							}
+						}
+						else
+						{
+							this.className = 'bott';
+							for (var i = 0; i < tablelist.length-1; i++)
+							{
+								for (var j = i+1; j < tablelist.length; j++)
+								{
+									if  (
+											tablelist[i].getElementsByTagName('td')[0] &&
+											tablelist[j].getElementsByTagName('td')[0].getElementsByTagName('a')[0].innerHTML.toLowerCase() <
+											tablelist[i].getElementsByTagName('td')[0].getElementsByTagName('a')[0].innerHTML.toLowerCase()
+										)
+									{
+										nicklistTable.insertBefore(tablelist[j],tablelist[i]);
+									}
+								}
+							}
+						}
+						return false;
+					};
+
+					nicklistAsortEntry.onclick = function ()
+					{
+						var tablelist = nicklistTable.getElementsByTagName('tr');
+						if (this.className == 'bott')
+						{
+							this.className = 'top'
+							for (var i = 0; i < tablelist.length-1; i++)
+							{
+								for (var j = i+1; j < tablelist.length; j++)
+								{
+									if  (
+											tablelist[i].getElementsByTagName('td')[1] &&
+											parseInt(tablelist[j].getElementsByTagName('td')[1].innerHTML) >
+											parseInt(tablelist[i].getElementsByTagName('td')[1].innerHTML)
+										)
+									{
+										nicklistTable.insertBefore(tablelist[j],tablelist[i]);
+									}
+								}
+							}
+						}
+						else
+						{
+							this.className = 'bott';
+							for (var i = 0; i < tablelist.length-1; i++)
+							{
+								for (var j = i+1; j < tablelist.length; j++)
+								{
+									if  (
+											tablelist[i].getElementsByTagName('td')[1] &&
+											parseInt(tablelist[j].getElementsByTagName('td')[1].innerHTML) <
+											parseInt(tablelist[i].getElementsByTagName('td')[1].innerHTML)
+										)
+									{
+										nicklistTable.insertBefore(tablelist[j],tablelist[i]);
+									}
+								}
+							}
+						}
+						return false;
+					};
+
+
+					for (var nick in chatlogObject.nicks)
+					{
+						var nicklistTRholding = nicklistTR.cloneNode(false);
+						var nicklistTDnick = nicklistTD.cloneNode(false);
+						var nicklistTDentry = nicklistTD.cloneNode(false);
+						var nicklistAviewEntrys = nicklistA.cloneNode(false);
+							nicklistAviewEntrys.onclick = function ()
+							{
+								var nickEntrys = chatlogObject.nicks[this.innerHTML].entrys;
+								for (var i = 0; i < nickEntrys.length; i++)
+								{
+									//alert(nickEntrys.length);
+									var time = chatlogObject.entrys[nickEntrys[i]].timestamp;
+									var msg = chatlogObject.entrys[nickEntrys[i]].text;
+									var color = chatlogObject.nicks[this.innerHTML].color;
+
+									var entryInsert = document.createElement('p');
+										entryInsert.innerHTML = '['+time+' / ] ' + this.innerHTML + ': ' + msg;
+
+									if (!!color) entryInsert.style.color = color;
+
+									document.getElementById(that.toInsert.chatlog).appendChild(entryInsert);
+									//alert(chatlogObject.entrys[nickEntrys[i]].text);
+								}
+								return false;
+							};
+
+						nicklistTable.appendChild(nicklistTRholding);
+						nicklistTRholding.appendChild(nicklistTDnick);
+						nicklistTRholding.appendChild(nicklistTDentry);
+						nicklistTDnick.appendChild(nicklistAviewEntrys);
+
+						var nickEntrys = chatlogObject.nicks[nick].entrys;
+						var nickColor = chatlogObject.nicks[nick].color;
+
+						nicklistAviewEntrys.innerHTML = nick;
+						nicklistTDentry.innerHTML = nickEntrys.length;
+
+						if (!!nickColor)
+						{
+							//nicklistTRholding.style.color = nickColor;
+							nicklistAviewEntrys.style.color = nickColor;
+						}
+					}
+					return false;
+				};
+
+				// insert menue point
+				listPointLinkNicklist.appendChild(listPointLinkTextNicklist);
+				var listPointNicklist = listPoint.cloneNode(false);
+				listMenue.appendChild(listPointNicklist).appendChild(listPointLinkNicklist);
+
+
+
+			// linklist view all posted links in chatlog
+			var listPointLinkTextLinklist = document.createTextNode('Linklist ');
+			var listPointLinkLinklist = listPointLink.cloneNode(false);
+				listPointLinkLinklist.onclick = function ()
+				{
+					// remove node
+					if (listPointLinkLinklist.className == 'top')
+					{
+						if (document.getElementById('linklist_chatlog_box'))
+						{
+							document.getElementById('linklist_chatlog_box').parentNode.removeChild(document.getElementById('linklist_chatlog_box'));
+						}
+						return false;
+					}
+
+					// insert node
+					listPointLinkLinklist.className = 'top';
+					var chatlogLinklistBox = document.createElement('div');
+						chatlogLinklistBox.id = 'linklist_chatlog_box';
+						chatlogLinklistBox.addEventListener('DOMNodeRemoved', function ()
+						{
+							listPointLinkLinklist.className = 'bott';
+						}, false);
+						document.getElementById(that.toInsert.linklist).appendChild(chatlogLinklistBox);
+
+					for (id in chatlogObject.entrys)
+					{
+						var searchin = chatlogObject.entrys[id].text;
+						var result = searchin.search(/<a href=.+/i);
+						if (result != -1)
+						{
+							var nick = chatlogObject.entrys[id].nick
+							var color = chatlogObject.nicks[nick].color;
+							var msg = chatlogObject.entrys[id].text;
+							var time = chatlogObject.entrys[id].timestamp;
+							var sCTTPT = chatTimeToPlayerTime(time);
+
+							var singleEntry = document.createElement('p');
+								if(color) singleEntry.style.color = color;
+								singleEntry.innerHTML = '[<span class="timestamp">'+time+'</span> / <span><a href="#" title="Set syncing value as start value '+sCTTPT+'" class="sync">As start value</a></span>] <span class="nick">'+nick+': </span> <span class="msg">'+msg+'</span>';
+
+							var setSync = singleEntry.getElementsByTagName('a')[0];
+								setSync.title = sCTTPT;
+								setSync.onclick = function ()
+								{
+									that.difTime = parseInt(this.title);
+									document.dispatchEvent(EvtSetInputValueSync);
+									document.getElementById(that.toInsert.chatlog).dispatchEvent(EvtClearChat);
+									return false;
+								};
+							chatlogLinklistBox.appendChild(singleEntry);
+
+							/*
+							holdLinks += '<p style="color:'+color+'"><a href="#" onclick="chatlogTimeForPlayer(this.innerHTML);return false;">'+time+'</a> <span class="nick">'+nick+': </span> <span class="msg">'+text+'</span></p>';*/
+						}
+					}
+					return false;
+				};
+
+				// insert menue point
+				listPointLinkLinklist.appendChild(listPointLinkTextLinklist);
+				var listPointLinklist = listPoint.cloneNode(false);
+				listMenue.appendChild(listPointLinklist).appendChild(listPointLinkLinklist);
+
+
+
+			// dump chatlog
+			var listPointLinkTextDump = document.createTextNode('Dump Chatlog ');
+			var listPointLinkDump = listPointLink.cloneNode(false);
+				listPointLinkDump.onclick = function ()
+				{
+
+					// remove node
+					if (listPointLinkDump.className == 'top')
+					{
+						if (document.getElementById('dump_chatlog_box'))
+						{
+							document.getElementById('dump_chatlog_box').parentNode.removeChild(document.getElementById('dump_chatlog_box'));
+						}
+						return false;
+					}
+
+					// insert node
+					listPointLinkDump.className = 'top';
+					var chatlogDumpBox = document.createElement('div');
+						chatlogDumpBox.id = 'dump_chatlog_box';
+						chatlogDumpBox.addEventListener('DOMNodeRemoved', function ()
+						{
+							listPointLinkDump.className = 'bott';
+						}, false);
+						document.getElementById(that.toInsert.dumplog).appendChild(chatlogDumpBox);
+
+					// build dump chatlog
+					for (var id in chatlogObject.entrys)
+					{
+						var nick = chatlogObject.entrys[id].nick;
+						var msg = chatlogObject.entrys[id].text;
+						var color = chatlogObject.nicks[nick].color;
+						var time = chatlogObject.entrys[id].timestamp;
+						var sCTTPT = chatTimeToPlayerTime(time);
+
+						var singleEntry = document.createElement('p');
+							if(color) singleEntry.style.color = color;
+							singleEntry.innerHTML = '[<span class="timestamp">'+time+'</span> / <span><a href="#" title="Set syncing value as start value '+sCTTPT+'" class="sync">As start value</a></span>] <span class="nick">'+nick+': </span> <span class="msg">'+msg+'</span>';
+
+
+							var setSync = singleEntry.getElementsByTagName('a')[0];
+							setSync.title = sCTTPT;
+							setSync.onclick = function ()
+							{
+								that.difTime = parseInt(this.title);
+								document.dispatchEvent(EvtSetInputValueSync);
+								document.getElementById(that.toInsert.chatlog).dispatchEvent(EvtClearChat);
+								return false;
+							};
+						chatlogDumpBox.appendChild(singleEntry);
+					}
+					return false;
+				};
+
+			var listPointDump = listPoint.cloneNode(false);
+
+			listPointLinkDump.appendChild(listPointLinkTextDump);
+			listMenue.appendChild(listPointDump).appendChild(listPointLinkDump);
+
+			// clear chat element
+
+			var listPointLinkTextClear = document.createTextNode('Clear Chat ');
+			var listPointLinkClear = listPointLink.cloneNode(false);
+				listPointLinkClear.className = 'empty';
+				listPointLinkClear.onclick = function ()
+				{
+					//document.getElementById(that.toInsert.chatlog).innerHTML = '';
+					//this.className = 'empty';
+					document.getElementById(that.toInsert.chatlog).dispatchEvent(EvtClearChat);
+					return false;
+				};
+
+			var listPointClear = listPoint.cloneNode(false);
+
+			listPointLinkClear.appendChild(listPointLinkTextClear);
+			listMenue.appendChild(listPointClear).appendChild(listPointLinkClear);
+
+			document.getElementById(that.toInsert.chatlog).addEventListener('DOMNodeInserted', function ()
+			{
+				listPointLinkClear.className = 'full';
+			}, false);
+
+			document.getElementById(that.toInsert.chatlog).addEventListener('DOMNodeRemoved', function (e)
+			{
+				if (e.target.parentNode.childNodes.length == 1)
+				{
+					//this.dispatchEvent(EvtClearChat); // here don't use events; id nodes problem
+					listPointLinkClear.className = 'empty';
+				}
+			}, false);
+
+			document.getElementById(that.toInsert.chatlog).addEventListener('ClearChat', function ()
+			{
+				this.innerHTML = '';
+				listPointLinkClear.className = 'empty';
+			});
+
+			// field input syncing (as last entry)
+			var listPointLabelSyncText = document.createTextNode('Chatlog syncing ±sec. ');
+			var listPointLabelSync = listPointLabel.cloneNode(false);
+				listPointLabelSync.appendChild(listPointLabelSyncText);
+
+			var listPointInputSync = document.createElement('input');
+				listPointInputSync.type = 'number';
+				listPointInputSync.value = that.difTime;
+				listPointInputSync.onchange = function ()
+				{
+					that.difTime = parseInt(this.value);
+				};
+				//that.difTime.addEventListener('DOMCharacterDataModified', function(){listPointInputSync.value = that.difTime;}, false);
+
+
+			var listPointSync = listPoint.cloneNode(false);
+
+			listMenue.appendChild(listPointSync).appendChild(listPointLabelSync).appendChild(listPointInputSync);
+
+			document.addEventListener('SetInputValueSync', function ()
+			{
+				listPointInputSync.value = that.difTime;
+			});
+
+
+
+		} // build chatlog end
+
+		//fire resize event
+
+		window.dispatchEvent(evt);
+	};
+
+	var evt = document.createEvent('UIEvents');
+		evt.initUIEvent('resize', true, false,window,0);
+
+	var EvtClearChat = new CustomEvent('ClearChat', function(){
+		//element that.toInsert.chatlog event
+	});
+	var EvtSetInputValueSync = new CustomEvent('SetInputValueSync', function(){
+		//hole document event
+	});
+
+
+
+	//HH:MM TIME TO SECONDS
+	var chatTimeToPlayerTime = function (hhmm)
+	{
+		var patternPrefix = /^([\-\+])?(\d{2}):(\d{2})$/i;
+		var time = patternPrefix.exec(hhmm);
+		if (!!time)
+		{
+			if (typeof(time[1]) == 'undefined')
+			{
+				time[1] = '';
+			}
+
+			if (typeof(time[2]) == 'undefined')
+			{
+				time[2] = 0;
+			}
+
+			if (typeof(time[3]) == 'undefined')
+			{
+				time[3] = 0;
+			}
+			return parseInt((time[1]+((time[2]*3600)+(time[3]*60))), 10);
+		}
+		else
+		{
+			return 0;
+		}
+
+	};
+
+	var lastEntryFromSeq = 0; //the last used entry (number) of currentChatlogSequenze
+	var lastPlayerTimeToChattime = ''; //HH:MM
+	var playerOnTimeupdateSyncChatlog = function ()
+	{
+		//var putInHTML = document.getElementById('testcase'); // ONLY FOR TEST
+
+		var currentTime = this.currentTime; // from Event OnUpdate
+
+		//HH:MM:SS TIME NOT YET IMP.
+
+		// SECONDS FLOAT PLAYER TIME TO prefixHH:MM CHAT TIME
+		var playerTimeToChattime_HHMM = function ()
+		{
+			var prefix = '';
+			var appendSubtraction = ( ((currentTime + that.difTime) / 60  % 60) < 0 ? -60 : 0);
+			var hours = parseInt( (currentTime + that.difTime) / 3600 );
+			var minutes = parseInt( (currentTime + that.difTime + appendSubtraction) / 60 ) % 60;
+			if (minutes < 0)
+			{
+				prefix = '-';
+				minutes = minutes - 2*minutes;
+			}
+			return (hours < 10 ? prefix+'0' + hours : prefix+hours) + ':' + (minutes < 10 ? '0' + minutes : minutes);
+		};
+
+		var playerTime_HMS = function (secondsFloat)
+		{
+			var hours = parseInt( (secondsFloat) / 3600 );
+			var minutes = parseInt( (secondsFloat) / 60 ) % 60;
+			var seconds =  parseInt( (secondsFloat)) % 60;
+			return (hours < 10 ? '0' + hours : hours) + ':' + (minutes < 10 ? '0' + minutes : minutes) + ':' + (seconds < 10 ? '0' + seconds : seconds);
+		};
+
+		var viewChatlogEntry = function ()
+		{
+			var entry = currentChatlogSequenze[currentEntryFromSeq];
+			var nick = 	chatlogObject.entrys[entry].nick;
+			var msg =  	chatlogObject.entrys[entry].text;
+			var color = chatlogObject.nicks[nick].color;
+			var time =  chatlogObject.entrys[entry].timestamp;
+
+			var entryDOM = document.createElement('p');
+				if(color) entryDOM.style.color = color;
+				//var playerTime = document.createElement('a');
+				//	playerTime.innerHTML = currentTime.toFixed(3);
+				entryDOM.innerHTML = '[<span class="timestamp">'+time+'</span> / <span><a href="#t" title="Jump to player time '+playerTime_HMS(currentTime.toFixed(3))+'" class="playertime">'+currentTime.toFixed(3)+'</a></span> / <span><a href="#" title="Set syncing value at start time '+(that.difTime + -currentTime.toFixed(0))+'" class="sync">sync</a></span>] <span class="nick">' + nick + '</span>: <span class="msg">' + msg + '</span>';
+
+				var playerTime = entryDOM.getElementsByTagName('a')[0];
+					playerTime.onclick = function ()
+					{
+						document.getElementById(that.usePlayer).currentTime = currentTime;
+						return false;
+					};
+
+				var playerSync = entryDOM.getElementsByTagName('a')[1];
+					playerSync.onclick = function ()
+					{
+						//var listPointInputSyncTime = document.getElementById(that.toInsert.menue).currentTime;
+						//listPointInputSyncTime = (listPointInputSyncTime <
+						//document.getElementById(that.toInsert.menue).currentTime = currentTime;
+
+						that.difTime += -currentTime.toFixed(0);
+
+						//document.getElementById(that.toInsert.menue).getElementsByTagName('input')[0].value = that.difTime;
+						//listPointLinkClear.click();
+						document.dispatchEvent(EvtSetInputValueSync);
+						document.getElementById(that.toInsert.chatlog).dispatchEvent(EvtClearChat);
+						return false;
+					};
+
+			document.getElementById(that.toInsert.chatlog).appendChild(entryDOM);
+			document.getElementById(that.toInsert.chatlog).scrollTop = document.getElementById(that.toInsert.chatlog).scrollHeight;
+		};
+
+
+
+		var currentPlayerTimeToChattime = playerTimeToChattime_HHMM();
+
+		if(!!!chatlogObject.timestamps[currentPlayerTimeToChattime]){
+			return false;
+		}
+		var currentChatlogSequenze = new Object(chatlogObject.timestamps[currentPlayerTimeToChattime].entrys);
+
+		var entryAnyXsec = parseFloat(59 / currentChatlogSequenze.length).toFixed(3);
+		var seconds = parseFloat(( (currentTime % 60) + 60 + (that.difTime % 60) ) % 60).toFixed(3);
+		var currentEntryFromSeq = parseInt(seconds / entryAnyXsec);
+
+		if (currentEntryFromSeq != lastEntryFromSeq && currentEntryFromSeq != currentChatlogSequenze.length)
+		{
+			viewChatlogEntry();
+		}
+		else if (currentEntryFromSeq != currentChatlogSequenze.length && currentEntryFromSeq == lastEntryFromSeq && lastPlayerTimeToChattime != currentPlayerTimeToChattime)
+		{
+			viewChatlogEntry();
+		}
+
+		lastEntryFromSeq = currentEntryFromSeq;
+		lastPlayerTimeToChattime = currentPlayerTimeToChattime;
+	};
+
+	var metadataReady = function ()
+	{
+		buildingMenue('metadata');
+		var info = document.getElementById('metainfo');
+		info.innerHTML = (
+			'<span id="title" style="font-size:2em;line-height:1;">'+metaObject.defaults.title+'</span><br />'
+			+ metaObject.defaults.album
+			+ ' '
+			+ metaObject.defaults.tracknumber
+			+ ' by '
+			+ metaObject.defaults.artist
+			+ ' '
+			+ metaObject.defaults.date
+		);
+	};
+
+
+
+
+	function readMetadata (bufferAsArray) {
+		if (!bufferAsArray || bufferAsArray.length == 0)
+		{
+			alert('Error (NONE bufferAsArray):  function readMetadata (bufferAsArray)');
+			return;
+		}
+
+		// check the first few bytes of fileheader to verify fileformat; ogg/vorbis,opus - mp3/id3,3DI - mp4/ftypxxx
+		var firstBytesAsString = '';
+		for (var i = 0; i < 49; i++)
+		{
+			firstBytesAsString += String.fromCharCode(bufferAsArray[i]);
+		}
+
+		if (firstBytesAsString.search(/Ogg/i) != -1)
+		{
+
+			var metadataArray = [];
+			if (firstBytesAsString.search(/vorbis/i) != -1)
+			{
+				// voribs is second time present +38 is prevent to OggS trash (not the best sulution but for moment...)
+				readMetadataVorbisComments(bufferAsArray,firstBytesAsString.search(/vorbis/i)+38);
+				return;
+				alert("DOOF");
+				// "vorbis" first ~40 bytes or less
+				// SEARCH END OF METADATA
+				for (var i = 0, baAL = bufferAsArray.length; i < baAL; i++)
+				{
+					if ( // 35|01 05    6F 72 62 69 73 XX 42 43 56 == 5|   vorbis?BCV
+
+						//bufferAsArray[i] 	== 118 	&&
+						bufferAsArray[i+1] 	== 5 	&&
+						bufferAsArray[i+2] 	== 118 	&&
+						bufferAsArray[i+3] 	== 111 	&&
+						bufferAsArray[i+4] 	== 114 	&&
+						bufferAsArray[i+5] 	== 98 	&&
+						bufferAsArray[i+6] 	== 105 	&&
+						bufferAsArray[i+7] 	== 115 	&&
+						// JUMP ++ XX
+						bufferAsArray[i+9] 	== 66 	&&
+						bufferAsArray[i+10] 	== 67 	&&
+						bufferAsArray[i+11] 	== 86
+						)
+					{
+						break;
+					}
+					metadataArray.push(bufferAsArray[i]);
+				}
+
+				// REMOVE/FILTER Seq./Chu. OggS TRASH IN METADATAARRAY
+				metadataArrayClean = [];
+				for (var i = 0, mdAL = metadataArray.length;  i < mdAL; i++)
+				{
+					if ( // 4F 67 67 53 00|FF 00|FF FF FF FF FF FF FF FF FF == OggS ...  ++ 39 ++ 15 ++ 26
+						metadataArray[i] == 79 &&
+						metadataArray[i+1] == 103 &&
+						metadataArray[i+2] == 103 &&
+						metadataArray[i+3] == 83
+						)
+					{
+						// JUMP NEXT 26 BYTES OggS +  FF|00n + SIZE(<-- +26) + FFn + [FF-00]n (SPEC?) http://en.wikipedia.org/wiki/Ogg_Page
+						var jumpEnd = metadataArray[i+26]; //http://xiph.org/vorbis/doc/framing.html
+						/*
+						for (var y = i+26; y < mdAL; y++)
+						{
+							if ( // FF FF FF FF XX XX ...
+								metadataArray[y] == 255 &&
+								metadataArray[y+1] != 255 &&
+								metadataArray[y+2] != 255
+								)
+							{
+								i = y+1;
+								break;
+							}
+						}
+						*/
+						i += 26 + jumpEnd;
+						continue;
+					}
+					metadataArrayClean.push(metadataArray[i]);
+				}
+				readMetadataOggFile(metadataArrayClean);
+			}
+			else if (firstBytesAsString.search(/OpusHead/i) != -1)
+			{
+				readMetadataVorbisComments(bufferAsArray,firstBytesAsString.search(/OpusHead/i)+8);
+			}
+		}
+		else if (firstBytesAsString.search(/id3/i) != -1)
+		{
+			readMetadataMP3File(bufferAsArray,0);
+		}
+		else if (firstBytesAsString.search(/ftyp/i) != -1)
+		{ // MP4 (MPEG-4) CONTAINER IS PAIN! NOT ALL POSSIBLE SITUATION  AND FORMATES SUPPORTED
+			var metadataArray = [];
+			if (firstBytesAsString.search(/free/i) != -1 || firstBytesAsString.search(/moov/i) == -1)
+			{//reverse
+				for (var i = bufferAsArray.length; i > 0; i--)
+				{
+					metadataArray.push(bufferAsArray[i]);
+					if ( // 6D 6F 6F 76 == moov == 109 111 111 118
+						bufferAsArray[i] == 109 &&
+						bufferAsArray[i+1] == 111 &&
+						bufferAsArray[i+2] == 111 &&
+						bufferAsArray[i+3] == 118
+						)
+					{
+						break;
+					}
+				}
+				metadataArray.reverse();
+				readMetadataMpeg4File(metadataArray);
+			}
+			else
+			{//forward
+				for (var i = 0; i < bufferAsArray.length; i++)
+				{
+					if ( // 6D 6F 6F 76 == moov == 109 111 111 118
+						bufferAsArray[i] == 109 &&
+						bufferAsArray[i+1] == 111 &&
+						bufferAsArray[i+2] == 111 &&
+						bufferAsArray[i+3] == 118
+						)
+					{
+						var sizeByte1 = bufferAsArray[i-4],
+							sizeByte2 = bufferAsArray[i-3],
+							sizeByte3 = bufferAsArray[i-2],
+							sizeByte4 = bufferAsArray[i-1];
+						var sizeSum = (((((sizeByte1 << 8) + sizeByte2) << 8) + sizeByte3) << 8) + sizeByte4;
+						for (var x = i, abs = i + sizeSum; x < abs; x++)
+						{
+							metadataArray.push(bufferAsArray[x]);
+						}
+						//alert('sizeSum '+ sizeSum + ' arraysize ' + metadataArray.length);
+						break;
+					}
+				}
+				readMetadataMpeg4File(metadataArray);
+			}
+		}
+	};
+
+	function readMetadataMpeg4File(metadataArray)
+	{ // MP4 (MPEG-4) CONTAINER IS PAIN! NOT ALL POSSIBLE SITUATION SUPPORTED
+
+		function getAtomBoxSize (pos)
+		{
+			//big endian
+			var sizeByte1 = metadataArray[pos-4],
+				sizeByte2 = metadataArray[pos-3],
+				sizeByte3 = metadataArray[pos-2],
+				sizeByte4 = metadataArray[pos-1];
+			var sizeSum = (((((sizeByte1 << 8) + sizeByte2) << 8) + sizeByte3) << 8) + sizeByte4;
+			return sizeSum;
+		}
+
+		function getDataStr (sizeSum,pos)
+		{
+			var dataStr = '';
+			for (var x = pos + 20, dataSize = pos + sizeSum -4; x < dataSize; x++)
+			{
+				dataStr += String.fromCharCode(metadataArray[x]) ;
+			}
+			return utf8_decode(dataStr);
+		}
+
+		for (var i = 0, mdAL = metadataArray.length; i < mdAL; i++)
+		{
+			var fourBytes = metadataArray[i] + ' ' + metadataArray[i+1] + ' ' + metadataArray[i+2] + ' ' + metadataArray[i+3];
+			switch (fourBytes)
+			{
+				// CHAPTERS: 63 68 70 6C == chpl == 99 104 112 108
+				case '99 104 112 108':
+					var sizeSum = getAtomBoxSize(i);
+					var chapterCount = metadataArray[i+12]; // LIMIT 1BYTE MAX 255 CHAPTERS (?)
+
+					var chapterID = 0;
+					for (var x = i+14, max = i + sizeSum; x < max; x++)
+					{
+						chapterID++;
+						metaObject.chapters.ids.push(chapterID);
+						metaObject.chapters[chapterID] = {};
+
+						// READ CHAPTER START TIME
+						var chapterTimeMillisec = '';
+						for (var z = x; z < x + 7; z++)
+						{
+							var hexVal = metadataArray[z].toString(16);
+							if (hexVal.length == 1)
+							{
+								hexVal = '0'+hexVal;
+							}
+							chapterTimeMillisec += hexVal;
+						}
+						chapterTimeMillisec = parseInt(chapterTimeMillisec,16);
+						chapterTimeMillisec = chapterTimeMillisec/10000; // MHHHH 10(-4) what it means f (iso 8601)?
+
+						metaObject.chapters[chapterID].timeMillisec = chapterTimeMillisec;
+						metaObject.chapters[chapterID].timeSecFloat = parseFloat(chapterTimeMillisec/1000.000);
+
+						var hh = parseInt(( chapterTimeMillisec / 1000 ) / (60 * 60)) ; //% 24;
+						var mm = parseInt(( chapterTimeMillisec / 1000 ) / (60)) % 60;
+						var ss = parseFloat( chapterTimeMillisec / 1000.000 ) % 60;
+						ss = ss.toFixed(3);
+
+						metaObject.chapters[chapterID].timeHMSfloat = (
+							(hh < 10 ? '0' + hh : hh)
+							+ ':' +
+							(mm < 10 ? '0' + mm : mm)
+							+ ':' +
+							(ss < 10 ? '0' + ss : ss)
+						);
+
+						// READ CHAPTER TEXT
+						var chapterText = '';
+						var chapterCharLength = metadataArray[x+7]; // LIMIT 1BYTE MAX 255 CHARS CHAPTER NAME LENGTH (?); CHAPTER NAME - NO NOVEL;
+						for (var y = x+8; y < x + 8 + chapterCharLength; y++)
+						{
+							chapterText += String.fromCharCode(metadataArray[y]);
+						}
+						chapterText = utf8_decode(chapterText);
+						metaObject.chapters[chapterID].txt = chapterText;
+
+						// FINAL OR JUMP TO NEXT CHAPTER
+						if (chapterID == chapterCount)
+						{
+							break;
+						}
+						x += 8 + chapterCharLength;
+						continue;
+					}
+					metaObject.chapters.present = true;
+					i += sizeSum-1;
+					continue;
+				break;
+
+				// COVER/PICTURE: 63 6F 76 72 == covr == 99 111 118 114
+				case '99 111 118 114':
+					var sizeSum = getAtomBoxSize(i);
+					var coverType = metadataArray[i+15];
+					var imageData = '';
+					var imageBase64Data = '';
+
+					for (var x = i + 20, imgSize = i + 20 + sizeSum -8; x < imgSize; x++)
+					{
+						imageData += String.fromCharCode(metadataArray[x]) ;
+					}
+
+					// 13 = jpeg, 14 = png
+					if (coverType == (13 || 14))
+					{
+						imageBase64Data = window.btoa(imageData);
+						//metaObject.cover.type = 'data:image/'+(coverType == 13 ? 'jpeg' : 'png')+';base64,';
+					}
+					else
+					{
+						// hope it is base64 encoded image (text/chars);
+						// chrome needs '=', too - sometime present on end of image
+						imageBase64Data = imageData.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=\+\/]/g, "");
+						//metaObject.cover.type = 'data:image/;base64,';
+					}
+
+					var pic = imageBase64Data.search(/iVBORw0KGgo/);
+					if (pic != -1)
+					{
+						metaObject.cover.base64 = imageBase64Data.substring(pic);
+						metaObject.cover.type = 'data:image/png;base64,';
+						metaObject.cover.present = true;
+					}
+					else
+					{
+						var pic = imageBase64Data.search(/\/9j\//);
+						if (pic != -1)
+						{
+							metaObject.cover.base64 = imageBase64Data.substring(pic);
+							metaObject.cover.type = 'data:image/jpeg;base64,';
+							metaObject.cover.present = true;
+						}
+					}
+
+					document.getElementById('podplayer').poster = metaObject.cover.type+metaObject.cover.base64;
+					i += sizeSum-1;
+					continue;
+				break;
+
+				// TITLE: A9 6E 61 6D == ©nam == 169 110 97 109
+				case '169 110 97 109':
+					var sizeSum = getAtomBoxSize(i);
+					metaObject.defaults.title = getDataStr(sizeSum,i);
+					i += sizeSum-1;
+					continue;
+				break;
+
+				// ARTIST: A9 41 52 54 == ©ART == 169 65 82 84
+				case '169 65 82 84':
+					var sizeSum = getAtomBoxSize(i);
+					metaObject.defaults.artist = getDataStr(sizeSum,i);
+					i += sizeSum-1;
+					continue;
+				break;
+
+				// ALBUM: A9 61 6C 62 == ©alb == 169 97 108 98
+				case '169 97 108 98':
+					var sizeSum = getAtomBoxSize(i);
+					metaObject.defaults.album = getDataStr(sizeSum,i);
+					i += sizeSum-1;
+					continue;
+				break;
+
+				// custom GENRE: A9 67 65 6E == ©gen == 169 103 101 110
+				// standard GENRE: 67 6E 72 65 == gnre == 103 110 114 101
+				case '169 103 101 110':
+				case '103 110 114 101':
+					var sizeSum = getAtomBoxSize(i);
+					metaObject.defaults.genre = getDataStr(sizeSum,i);
+					i += sizeSum-1;
+					continue;
+				break;
+
+				// DATE: A9 64 61 79 == ©day == 169 100 97 121
+				case '169 100 97 121':
+					var sizeSum = getAtomBoxSize(i);
+					metaObject.defaults.date = getDataStr(sizeSum,i);
+					i += sizeSum-1;
+					continue;
+				break;
+
+				// TRACKNUMBER: 74 72 6B 6E == trkn == 116 114 107 110
+				case '116 114 107 110':
+					var sizeSum = getAtomBoxSize(i);
+					metaObject.defaults.tracknumber = getDataStr(sizeSum,i);
+					i += sizeSum-1;
+					continue;
+				break;
+
+				// COPYRIGHT: 63 70 72 74 == cprt == 99 112 114 116
+				case '99 112 114 116':
+					var sizeSum = getAtomBoxSize(i);
+					metaObject.defaults.rights = getDataStr(sizeSum,i);
+					i += sizeSum-1;
+					continue;
+				break;
+
+				default:
+					continue;
+				break;
+			}//switch fourBytes end
+		}//for metadataArray end
+		metadataReady();
+	}//function readMetadataMpeg4File end
+
+	function readMetadataOggFile(metadataArray)
+	{
+		// METADATA ENTRYS; CATCH THEM ALL AND PUSH THEM TO ENTRYS ARRAY
+		var entrysArray = [];
+		for (var i = 0, mdAL = metadataArray.length; i < mdAL; i++)
+		{
+			if ( // XX 00 00 00 XX  == ? 0 0 0 ?
+				//bufferAsArray[i] < 32 &&
+				metadataArray[i+1] == 0 &&
+				metadataArray[i+2] == 0 &&
+				metadataArray[i+3] != 0 &&
+				metadataArray[i-1] != 0
+				)
+			{
+				var metadataStr = '';
+				for (var x = i+3; x < mdAL; x++)
+				{
+					// SPLIT METADATA ENTRY FROM OTHER METADATA ENTRY
+					if ( // XX [00-FF] 00 00 XX  == ? 0/255 0 0 ?
+						metadataArray[x] != 0 &&
+						//bufferAsArray[x+1] < 32 &&
+						metadataArray[x+2] == 0 &&
+						metadataArray[x+3] == 0 &&
+						metadataArray[x+4] != 0
+						)
+					{
+						break;
+					}
+					metadataStr += String.fromCharCode(metadataArray[x]);
+				}
+				entrysArray.push(metadataStr);
+			}
+		}
+
+
+		// FILL metaObject = {}
+		for (var i = 0, eAL = entrysArray.length; i < eAL; i++)
+		{
+			var entry = entrysArray[i];
+			var metaDiv = entrysArray[i].search(/=/i);
+			if(metaDiv != -1)
+			{
+				var metaKey = entry.substring(0,metaDiv).toUpperCase();
+				var metaVal = entry.substring(metaDiv+1);
+
+				var patChapter = /^CHAPTER0{0,2}(\d{1,3})(NAME)?$/i;
+				var getChapter = patChapter.exec(metaKey);
+
+				if (getChapter && typeof(getChapter[1]) != 'undefined')
+				{
+					if (!metaObject.chapters[getChapter[1]])
+					{
+						metaObject.chapters[getChapter[1]] = {};
+						metaObject.chapters.ids.push(getChapter[1]);
+					}
+
+					if (typeof(getChapter[2]) != 'undefined')
+					{ // CHAPTER NAME
+						metaObject.chapters[getChapter[1]].name = utf8_decode(metaVal);
+					}
+					else
+					{ // CHAPTER TIME
+						//e.g. 03:26:10.000-->04:14:27.244
+						var splitChapFT = metaVal.split('-->');
+						var chapTimeToMillisec = splitChapFT[0].split(':');
+						chapTimeToMillisec.reverse();
+
+						var chapTimeMilliSum = 0;
+						for (var x in chapTimeToMillisec)
+						{
+							if (x > 0)
+							{
+								chapTimeMilliSum += parseInt( (chapTimeToMillisec[x]*Math.pow(60,x))*1000);
+							}
+							else
+							{
+								chapTimeMilliSum += parseFloat( chapTimeToMillisec[x]*1000);
+							}
+						}
+						metaObject.chapters[getChapter[1]].timeMillisec = chapTimeMilliSum;
+						metaObject.chapters[getChapter[1]].timeSecFloat = parseFloat(chapTimeMilliSum/1000.000);
+						metaObject.chapters[getChapter[1]].timeHMSfloat = splitChapFT[0];
+					}
+					metaObject.chapters.present = true;
+					continue;
+				}
+
+				switch (metaKey)
+				{
+					case 'COVERART':
+					case 'METADATA_BLOCK_PICTURE':
+						// chrome needs char '=', too - sometime in the end of image
+						var imageBase64DataClean = metaVal.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=\+\/]/g, "");
+						var pic = imageBase64DataClean.search(/iVBORw0KGgo/);
+						if (pic != -1)
+						{
+							metaObject.cover.base64 = imageBase64DataClean.substring(pic);
+							metaObject.cover.type = 'data:image/png;base64,';
+							metaObject.cover.present = true;
+						}
+						else
+						{
+							var pic = imageBase64DataClean.search(/\/9j\//);
+							if (pic != -1)
+							{
+								metaObject.cover.base64 = imageBase64DataClean.substring(pic);
+								metaObject.cover.type = 'data:image/jpeg;base64,';
+								metaObject.cover.present = true;
+							}
+							else
+							{
+								// GIF TIFF APNG URI NOTHING
+							}
+						}
+						document.getElementById('podplayer').poster = metaObject.cover.type+metaObject.cover.base64;
+					break;
+
+					case 'ALBUM':
+					case 'ARTIST':
+					case 'TRACKNUMBER':
+					case 'TITLE':
+					case 'DATE':
+					case 'GENRE':
+					case 'RIGHTS':
+					case 'LICENSE':
+						if (metaObject.defaults[metaKey.toLowerCase()])
+						{
+							metaObject.defaults[metaKey.toLowerCase()] += ', ' + utf8_decode(metaVal);
+						}
+						else
+						{
+							metaObject.defaults[metaKey.toLowerCase()];
+							metaObject.defaults[metaKey.toLowerCase()] = utf8_decode(metaVal);
+						}
+
+						/*
+						if (metaObject.defaults.album.length > 0)
+						{
+							metaObject.defaults.album += ', ';
+						}
+						metaObject.defaults.album += utf8_decode(metaVal);
+						*/
+					break;
+
+					default:
+						if (metaObject.others[metaKey.toLowerCase()])
+						{
+							metaObject.others[metaKey.toLowerCase()] += ', ' + utf8_decode(metaVal);
+						}
+						else
+						{
+							metaObject.others[metaKey.toLowerCase()];//.push(metaKey);
+							metaObject.others[metaKey.toLowerCase()] = utf8_decode(metaVal);
+						}
+					break;
+				} // switch end
+			}
+		} // for end
+
+		metadataReady();
+	};//function readMetadataOggFile end
+
+	function readMetadataVorbisComments(bufferAsArray,beginOnPosition)
+	{ // god thanks it is opus out there. realy nice spec:  http://tools.ietf.org/html/draft-terriberry-oggopus-01#section-5.2
+
+		/* remPageSize will be prevent wrong bytesize/stringlength calculation because Ogg Page/Chunks is multiple presentent some where in file and is not calculate within */
+		var remPageSize = 0; // to filter OggS chunks http://en.wikipedia.org/wiki/Ogg_Page
+
+		var vcLength = function (pos)
+		{
+			pos += remPageSize;
+			// little endian
+			var sizeByte1 = bufferAsArray[pos+3],
+				sizeByte2 = bufferAsArray[pos+2],
+				sizeByte3 = bufferAsArray[pos+1],
+				sizeByte4 = bufferAsArray[pos];
+			var sizeSum = (((((sizeByte1 << 8) + sizeByte2) << 8) + sizeByte3) << 8) + sizeByte4;
+			return sizeSum;
+		};
+
+		var vcString = function (string_begin,string_length)
+		{
+			string_begin += 4 + remPageSize;
+			var buildString = '';
+			for (var i = string_begin, string_end = string_begin + string_length; i < string_end; i++)
+			{
+				// remove/filter seq./chu. OggS trash http://en.wikipedia.org/wiki/Ogg_Page
+				if (
+					bufferAsArray[i] == 79 &&
+					bufferAsArray[i+1] == 103 &&
+					bufferAsArray[i+2] == 103 &&
+					bufferAsArray[i+3] == 83
+					)
+				{
+					var segment = bufferAsArray[i+26] + 26;
+					remPageSize += segment + 1;
+					string_end += segment;
+					i += segment;
+					continue;
+				}
+				buildString += String.fromCharCode(bufferAsArray[i]);
+			}
+			// the strings in opus/ogg (vorbis comments) should be UTF-8 vector but who knows where fed from which witch "text" file; or simple javascript is stupid. so decode to paste encoded (remember remember javascript used internal utf16)
+			buildString = utf8_decode(buildString);
+			return buildString;
+		};
+
+		/*
+		var vcNextStep = function (vc_pos,vcLength)
+		{
+			//pos+4+vc_length;
+		};
+		*/
+
+		var vcStepByStep = function (vc_pos,list_length)
+		{
+			var entrysArray = [];
+			for (var i = 0; i < list_length; i++)
+			{
+				var vc_length = vcLength(vc_pos);
+				var vc_string = vcString(vc_pos,vc_length);
+				entrysArray.push(vc_string);
+				vc_pos += 4 + vc_length;
+			}
+			vcFillMetaObject(entrysArray);
+		};
+
+		var vcFillMetaObject = function (entrysArray)
+		{
+			for (var i = 0, eAL = entrysArray.length; i < eAL; i++)
+			{
+				var singleEntry = entrysArray[i];
+				var separator = singleEntry.search(/=/i);
+
+				if (separator != -1)
+				{
+					var metaKey = singleEntry.substring(0,separator).toLowerCase();
+					var metaVal = singleEntry.substring(separator+1);
+
+					var patChapter = /^CHAPTER(\d+)(NAME)?(URL)?$/i;
+					var getChapter = patChapter.exec(metaKey);
+
+					if (!!getChapter)
+					{
+						// prepare chapters entrys (and listing ids)
+						if (!!getChapter[1] && !metaObject.chapters[getChapter[1]])
+						{
+							metaObject.chapters[getChapter[1]] = {};
+							metaObject.chapters.ids.push(getChapter[1]);
+						}
+
+						// chapter time
+						// only first entry... sub chapters not supported e.g.:
+						// 00:00:01.000 --> 00:00:02.000 (after "-->" will ignore)
+						if (!!getChapter[1] && !getChapter[2] && !getChapter[3])
+						{
+							var patt = /-->/;
+							var result = metaVal.split(patt);
+							if (!!result)
+							{
+								var timeValue = result[0].split(':');
+								timeValue.reverse();
+								var timeValueMS = 0;
+								for (var x in timeValue)
+								{
+									if (x > 0)
+									{
+										timeValueMS += parseInt( (timeValue[x]*Math.pow(60,x))*1000);
+									}
+									else
+									{
+										timeValueMS += parseFloat( timeValue[x]*1000);
+									}
+								}
+
+								/*
+									for time abbreviation use makeTime(format,ms);
+									e.g. (for player time format from second chapter):
+									makeTime('S.MS',metaObject.chapters[1].time);
+									or (if more spec like):
+									makeTime('S.MS',metaObject.chapters.002.time);
+								*/
+								metaObject.chapters[getChapter[1]].time = timeValueMS;
+							}
+							else
+							{
+								return false;
+							}
+						}
+
+						// chapter name
+						if (!!getChapter[1] && !!getChapter[2] && !getChapter[3])
+						{
+							metaObject.chapters[getChapter[1]].name = metaVal;
+						}
+
+						// chapter url
+						if (!!getChapter[1] && !getChapter[2] && !!getChapter[3])
+						{
+							metaObject.chapters[getChapter[1]].url = metaVal;
+						}
+
+						metaObject.chapters.present = true;
+						continue; // next
+					} // chapter end
+
+					switch (metaKey.toUpperCase())
+					{
+						case 'COVERART':
+						case 'METADATA_BLOCK_PICTURE':
+						case 'APIC':
+							var imageBase64DataClean = metaVal.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=\+\/]/g, "");
+							var pic = imageBase64DataClean.search(/iVBORw0KGgo/); //PNG ind.
+							if (pic != -1)
+							{
+								metaObject.cover.base64 = imageBase64DataClean.substring(pic);
+								metaObject.cover.type = 'data:image/png;base64,';
+								metaObject.cover.present = true;
+							}
+							else
+							{
+								var pic = imageBase64DataClean.search(/\/9j\//); //JPEG ind.
+								if (pic != -1)
+								{
+									metaObject.cover.base64 = imageBase64DataClean.substring(pic);
+									metaObject.cover.type = 'data:image/jpeg;base64,';
+									metaObject.cover.present = true;
+								}
+								else
+								{
+									var pic = metaVal.search(/-->/);
+									if (pic != -1)
+									{
+										metaObject.cover.url = utf8_decode(metaVal.substring(pic+3));
+										metaObject.cover.type = 'url';
+										metaObject.cover.present = true;
+									}
+									else
+									{
+										// /2P/ picture x
+									}
+								}
+							}
+						break;
+
+						default:
+							if (metaObject.defaults[metaKey])
+							{
+								metaObject.defaults[metaKey] += ', ' + utf8_decode(metaVal);
+							}
+							else
+							{
+								metaObject.defaults[metaKey];
+								metaObject.defaults[metaKey] = utf8_decode(metaVal);
+							}
+						break;
+					} // switch end
+				}
+			} // for end
+			metadataReady();
+		};
+
+		for (var i = beginOnPosition || 0, baAL = bufferAsArray.length; i < baAL; i++)
+		{
+			// search for "OpusTags" (after OpusHead)
+			if (
+				bufferAsArray[i] == 79 &&
+				bufferAsArray[i+1] == 112 &&
+				bufferAsArray[i+2] == 117 &&
+				bufferAsArray[i+3] == 115 &&
+				bufferAsArray[i+4] == 84 &&
+				bufferAsArray[i+5] == 97 &&
+				bufferAsArray[i+6] == 103 &&
+				bufferAsArray[i+7] == 115
+				)
+			{
+				var length_vendor = vcLength(i+8);
+				metaObject.vendor = vcString(i+8,length_vendor);
+
+				var list_length = vcLength(i+12+length_vendor);
+
+				vcStepByStep(i+12+length_vendor+4, list_length);
+
+				break;
+			}
+
+			// search for "vorbis" (second time)
+			if (
+				bufferAsArray[i] == 118 &&
+				bufferAsArray[i+1] == 111 &&
+				bufferAsArray[i+2] == 114 &&
+				bufferAsArray[i+3] == 98 &&
+				bufferAsArray[i+4] == 105 &&
+				bufferAsArray[i+5] == 115
+				)
+			{
+				var length_vendor = vcLength(i+6);
+				metaObject.vendor = vcString(i+6,length_vendor);
+
+				var list_length = vcLength(i+10+length_vendor);
+				metaObject.entrys = list_length;
+
+				vcStepByStep(i+10+length_vendor+4, list_length);
+
+				break;
+			}
+		}
+	};
+
+	var readMetadataMP3File = function(bufferAsArray,beginOnPosition)
+	{/* AT FIRST, RANT: MP3/ID3 is very hacking like format... many stuff you can do to many for me so only the simple will do ( boah voll die seuche )*/
+
+
+
+		//var i = beginOnPosition || 0;
+		var i = beginOnPosition = 0;
+
+		// The informal standard formerly known as "ID3v2" has been renamed to "ID3v2.2" )
+		var version = 2; // v2.version
+
+		var is_unsynchronisation = false; // bit 7 of header flags (a) affected all frames
+		var is_extended = false; // bit 6 of header flags (b) if follow extend header is present
+		var is_experimental = false; // bit5 of header flags (c) if tag is an eperimental stage
+		var is_footer = false; // bit4 of header flags (d) if file has a footer (more stuff near end of file "3DI") [only setable in v2.4]
+
+
+		// 4.1.   Frame header flags
+		var frameFlags = function (pos) {
+
+			if (version == 4)
+			{
+				// v2.4 - 4.1.1. Frame status flags %0abc0000
+				var is_tag_alter_preservation = (!!(bufferAsArray[pos] & (1 << 6)));
+				var is_file_alter_preservation = (!!(bufferAsArray[pos] & (1 << 5)));
+				var is_read_only = (!!(bufferAsArray[pos] & (1 << 4)));
+
+				// v2.4 - 4.1.2. Frame format flags %0h00kmnp
+				var is_grouping_identity  = (!!(bufferAsArray[pos+1] & (1 << 6)));
+				var is_compression = (!!(bufferAsArray[pos+1] & (1 << 3)));
+				var is_encryption  = (!!(bufferAsArray[pos+1] & (1 << 2)));
+				var is_unsynchronisation  = (!!(bufferAsArray[pos+1] & (1 << 1)));
+				var is_data_length_indicator = (!!(bufferAsArray[pos+1] & (1 << 0)));
+			}
+
+			if (version == 3)
+			{
+				// v2.3 - 3.3.1.   Frame header flags %abc00000 %ijk00000
+				var is_tag_alter_preservation = (!!(bufferAsArray[pos] & (1 << 7)));
+				var is_file_alter_preservation = (!!(bufferAsArray[pos] & (1 << 6)));
+				var is_read_only = (!!(bufferAsArray[pos] & (1 << 5)));
+
+				var is_compression = (!!(bufferAsArray[pos+1] & (1 << 7)));
+				var is_encryption  = (!!(bufferAsArray[pos+1] & (1 << 6)));
+				var is_grouping_identity  = (!!(bufferAsArray[pos+1] & (1 << 5)));
+			}
+
+			var flag = {
+				'tag': is_tag_alter_preservation,
+				'file': is_file_alter_preservation,
+				'read': is_read_only,
+				'group': is_grouping_identity,
+					'groupID': null,
+				'comp': is_compression,
+				'enc': is_encryption,
+				'unsync': is_unsynchronisation || false,
+				'data': is_data_length_indicator || false
+			};
+
+			if (flag.group) {
+				//flag.groupID = bufferAsArray[?];
+			}
+
+			//alert(flag.tag + " T " + flag.file+ " T " +flag.read+ " T " +flag.group+ " T " +flag.comp+ " T " +flag.enc+ " T " +flag.unsync+ " T " +flag.data);
+			return flag;
+		};
+
+		var frameID = function (pos){
+			var buildFrameIDString = '';
+			buildFrameIDString += String.fromCharCode(bufferAsArray[pos]);
+			buildFrameIDString += String.fromCharCode(bufferAsArray[pos+1]);
+			buildFrameIDString += String.fromCharCode(bufferAsArray[pos+2]);
+			buildFrameIDString += String.fromCharCode(bufferAsArray[pos+3]);
+			return utf8_decode(buildFrameIDString);
+		};
+
+		var frameValue = function (string_begin,string_length)
+		{
+
+			//if () {}
+			//if (tagKey == 'APIC') return false;
+			var preventCharDescribe = 0;
+			var buildString = '';
+			var buildStringArray = [];
+			//ignore first 3 bytes +3
+			if (tagKey[0] == 'T')
+			{
+				//alert("JUMP");
+				if (bufferAsArray[string_begin] == 1)
+				{ // utf BE with BOOM
+					preventCharDescribe = 3;
+				}
+				else
+				{ // ISO ASCII utf LE without BOM
+					preventCharDescribe = 1;
+				}
+			}
+			else
+			{
+				//delimiter jump ?
+				//preventCharDescribe+1;
+			}
+			for (var i = string_begin + preventCharDescribe, string_end = string_begin + string_length; i < string_end; i++)
+			{
+				//alert(tagKey[0] + " " +String.fromCharCode(bufferAsArray[i]));
+				// uniChars is your friend
+				if (tagKey[0] == 'T')
+				{
+					//alert("HEX TEST: " + bufferAsArray[i].toString(16));
+					buildStringArray.push(bufferAsArray[i]);
+				}
+			}
+			var string = '';
+			if (tagKey[0] == 'T') string = uniChars(buildStringArray);
+			//alert("ERSTER: " + tagKey + " " + string);
+			return string;
+		};
+
+		var unsynchronisation = function ()
+		{
+			//
+		};
+
+		var size = function (pos)
+		{
+			//big endian
+			var sizeByte1 = bufferAsArray[pos],
+				sizeByte2 = bufferAsArray[pos+1],
+				sizeByte3 = bufferAsArray[pos+2],
+				sizeByte4 = bufferAsArray[pos+3];
+			var sizeSum = (((((sizeByte1 << 8) + sizeByte2) << 8) + sizeByte3) << 8) + sizeByte4;
+			return sizeSum;
+		};
+
+		var synchsafe_size = function (pos)
+		{
+			// big endian
+			var sizeByte1 = bufferAsArray[pos+3],
+				sizeByte2 = bufferAsArray[pos+2],
+				sizeByte3 = bufferAsArray[pos+1],
+				sizeByte4 = bufferAsArray[pos];
+			var sizeSum = sizeByte1 & 0x7f | ((sizeByte2  & 0x7f) << 7) | ((sizeByte3 & 0x7f) << 14) | ((sizeByte4 & 0x7f) << 21);
+			return sizeSum;
+		};
+
+
+
+		//check (again) is the first 3 bytes "ID3" - hex: 49 44 33 - dec: 73 68 51 (it is indicate ID3v2. The informal standard formerly known as "ID3v2" has been renamed to "ID3v2.2" )
+		if  ( // check file identifier "ID3"
+				i == 0 && (
+					bufferAsArray[i] == 73 &&
+					bufferAsArray[i+1] == 68 &&
+					bufferAsArray[i+2] == 51
+				)
+			)
+		{
+			// check major version of ID3v2  - subversion/revision not interestetd (i+4 should mostly .0)
+			version = bufferAsArray[i+3];
+
+			if  ( // check major version of ID3v2 (only .4 or .3)
+					version == (3 || 4)
+				)
+			{
+				// check flags (and fukov, i am webcoder not from planet binary)
+				if (bufferAsArray[i+5] > 0)
+				{
+					alert('Shame on me, your MP3/ID3 used some features they are not yet supported. sorry. ("unsynchronisation, extended header, experimental tags and/or footer [3DI]")');
+					return false;
+				}
+
+				// set bit "7", means a - Unsynchronisation in spec, dec:2
+				is_unsynchronisation = (!!(bufferAsArray[i+5] & (1 << 7)));
+				// set bit "6", means b - Extended header in spec, dec:4
+				is_extended = (!!(bufferAsArray[i+5] & (1 << 6)));
+				// set bit "5", means c - Experimental indicator in spec, dec:8
+				is_experimental = (!!(bufferAsArray[i+5] & (1 << 5)));
+				// set bit "4", means d - Footer present in spec, dec:16
+				is_footer = (!!(bufferAsArray[i+5] & (1 << 4)));
+
+				// check size
+				var id3Size = synchsafe_size(i+6);
+				//alert(id3Size);
+				for (var id3_begin = i + 10, id3_end = id3Size + i; id3_begin < id3_end; id3_begin++)
+				{
+					var tagKey = frameID(id3_begin);
+					var tagFlag = frameFlags(id3_begin+8);
+					var frameLength = (version == 4 && tagFlag.unsync == false && is_unsynchronisation == false ? synchsafe_size(id3_begin+4) : size(id3_begin+4));
+
+					// prevent wrong calculation or empty space (padding stuff)
+					if (id3_end < frameLength || 0 > frameLength || frameLength == 0) break;
+
+
+
+					var tagValue = frameValue(id3_begin+10,frameLength);
+					//alert("key: " + tagKey + " begin pos: " + id3_begin + " end pos: " + (id3_begin+frameLength));
+
+					if (tagFlag.group) {
+						//appendend group frame
+						/*
+						var secFrameLength = synchsafe_size(id3_begin+frameLength+1);
+						tagValue += frameValue(id3_begin+frameLength+10,secFrameLength);
+						alert("position ende " + (id3_begin+frameLength+secFrameLength));
+						*/
+					}
+
+					id3_begin += frameLength+9;
+					continue;
+				}
+
+
+
+				//
+				//alert(id3Size);
+				/*
+				var sizeByte1 = bufferAsArray[i+9],
+					sizeByte2 = bufferAsArray[i+8],
+					sizeByte3 = bufferAsArray[i+7],
+					sizeByte4 = bufferAsArray[i+6];
+				var sizeSum = ((((((sizeByte1 << 8) + sizeByte2) << 8) + sizeByte3) << 8) + sizeByte4);
+
+				alert(sizeSum);
+				*/
+
+			}
+			else
+			{
+				alert('Sorry your MP3/ID3 is to new or to old. only support for v2."3" and v2."4 "- your version is: v2."' + bufferAsArray[i+3] + '"!');
+				return false;
+			}
+		}
+		else
+		{
+			alert('Uii, no ID3 tag found! The first 3 bytes say: ' + utf8_decode(bufferAsArray[i])+utf8_decode(bufferAsArray[i+1])+utf8_decode(bufferAsArray[i+2]));
+			return false;
+		}
+	};
+
+	var makeTime = function (format,ms)
+	{
+		/**
+		HH:MM:SS.MS <-- mostly for view player time
+		HH:MM:SS <-- mostly for nice chapter view
+		HH:MM
+		MS
+		MM-SS
+		MM SS FFFFF
+		M / S
+		S.MS <-- to set player time
+		usw. usf.
+		**/
+		//var ms = timeValueMS;
+
+		var defaultFormat = 'S.MS';
+
+		if (!ms && ms !== 0)
+		{
+			return 'undefined';
+		}
+		if (!format)
+		{
+			format = defaultFormat;
+		}
+
+		var patt = /^\W*(H*)(\W*)(M*)(\W*)(S*)(\W*)(MS|F*)*\W*$/i;
+		var result = patt.exec(format);
+		if (!result)
+		{
+			format = defaultFormat;
+			result = patt.exec(format);
+			if (!result)
+			{
+				return 'undefined';
+			}
+		}
+
+		var time = {
+			hh: result[1],
+			mm: result[3],
+			ss: result[5],
+			ms: result[7],
+			set: {
+				ms: '',
+				ss: '',
+				mm: '',
+				hh: ''
+			}
+		};
+
+		var zeroing = function (length,num)
+		{
+			var str = new String(num);
+			while (length > str.length)
+			{
+				str = '0' + str;
+			}
+			return str;
+		};
+
+		var buildTime = '';
+
+		if (!!time.hh)
+		{
+			time.set.hh = parseInt(ms / 1000 / 3600);
+			time.set.hh = zeroing(time.hh.length,time.set.hh);
+			buildTime += time.set.hh + result[2];
+		}
+
+		if (!!time.mm)
+		{
+			if (!!time.hh)
+			{
+				time.set.mm = parseInt(ms / 1000 / 60) % 60;
+			}
+			else
+			{
+				time.set.mm = parseInt(ms / 1000 / 60);
+			}
+			time.set.mm = zeroing(time.mm.length,time.set.mm);
+			buildTime += time.set.mm + result[4];
+		}
+
+		if (!!time.ss)
+		{
+			if (!!time.mm)
+			{
+				time.set.ss = parseInt(ms / 1000) % 60;
+			}
+			else
+			{
+				time.set.ss = parseInt(ms / 1000);
+			}
+			time.set.ss = zeroing(time.ss.length,time.set.ss);
+			buildTime += time.set.ss + result[6];
+		}
+
+		if (!!time.ms)
+		{
+			if (!!time.ss)
+			{
+				var last3Int = new String(parseFloat(ms / 1000 ));
+				last3Int = last3Int.split('.')[1];
+				if (!last3Int) last3Int = '000';
+				for (var i = last3Int.length; i < 3; i++)
+				{
+					last3Int += '0';
+				}
+				time.set.ms = last3Int;
+			}
+			else
+			{
+				time.set.ms = ms;
+			}
+
+			var onlyMS = time.ms.search(/ms/i);
+			if (onlyMS == -1)
+			{
+				// remember toFixed will round numbers
+				var last3Int = new String(parseFloat(ms / 1000 ).toFixed(time.ms.length));
+				time.set.ms = last3Int.split('.')[1];
+			}
+			buildTime += time.set.ms;
+		}
+
+		return buildTime;
+	};
+
+
+	// SOME EVENTS
+
+	function whichTransitionEvent()
+	{
+		var el = document.createElement('div');
+		var transitions = {
+		  'transition':'transitionend',
+		  'OTransition':'otransitionend', //o 12
+		  'MSTransition':'msTransitionEnd',
+		  'MozTransition':'transitionend',
+		  'WebkitTransition':'webkitTransitionEnd'
+		}
+
+		for (var t in transitions){
+			if (el.style[t] !== undefined)
+			{
+				el = null;
+				delete el;
+				return transitions[t];
+			}
+		}
+	}
+
+	function updateTransition()
+	{
+		var el = document.querySelector("div.blend-in");
+		if (el) {
+			el.className = "blend-out";
+		} else {
+			el = document.querySelector("div.blend-out");
+			el.className = "blend-in";
+		}
+		return el;
+	}
+
+	function run()
+	{
+		var el = updateTransition();
+		var transitionend = whichTransitionEvent();
+		el.addEventListener(transitionend, updateTransition, false);
+	}
+	run();
+
+
+}; //syncPodChat end
+//alert(this);
+</script>
+</head>
+<body>
+
+
+
+<!-- <div id="busy">short while....</div> -->
+
+<!--
+	<nav id="inyourface">
+		<a href="#menue">jump to menue</a>
+		<a href="#chat">jump to chat</a>
+		<a href="#playerfield">jump to player</a>
+	</nav>
+-->
+<div id="spc_gui">
+	<div id="layer_1" class="layer">
+		<img id="spc_cover" src="load1.gif" alt="" width="100%" height="100%" />
+		<div id="status" class="blend-in">Waiting for interaction</div>
+
+		<!--<div id="status">Loading...</div>-->
+		<!-- <canvas id="spc_cover"></canvas> -->
+		<div id="metainfo">
+			<noscript>Javascript von Nöten!<br /> Javascript is that you need!<br /></noscript>
+			<span>No metadata searched/found/detected</span>
+		</div>
+
+	</div>
+	<div id="layer_2" class="layer">
+		<div id="problem_indicate">
+			<noscript>Javascript von Nöten!<br /> Javascript is that you need!<br /></noscript>
+			<span data-file-wrong="false">Your audio/video file is not playable in this browser!</span>
+			<span data-file-selected="false">No audio/video file selected!</span>
+		</div>
+		<audio controls="controls" preload="auto" id="podplayer">
+			  <!-- <source src="audio-file.m4a" type="audio/mp4" />
+			  <source src="audio-file.mp3" type="audio/mpeg" />
+			  <source src="nsfw049-flauschsandstrahler.oga" type="audio/ogg" /> -->
+
+			  <!-- only can see if true ;) -->
+			  What the.. follow the link and install if you want to live: <a href="http://www.mozilla.org/firefox/">Firefox Browser</a><br />
+			  Dein Browser unterstützt kein Audio-/Video-Tag!<br />
+			  Your browser does not support an audio/video tag!<br />
+		</audio>
+		<!--
+		<canvas id="controls"></canvas>
+		<div id="controls">
+			<button type="button" name="play/pause" value="play">Play</button>
+			<div id="seek" style="width:100%;border:solid 1px red;">
+				<div id="chose" style="margin-left:10%;">D</div>
+			</div>
+			<input type="range" name="seeking" id="seeking" min="0" max="60000" value="6000" />
+			<a name="">jump to last position</a>
+		</div>
+		-->
+	</div>
+	<div id="layer_3" class="layer">
+		<div id="menue"></div>
+		<div readonly="readonly" id="chat" unselectable="on"></div>
+	</div>
+
+</div>
+	<div class="overlay"></div>
+
+<script type="text/javascript">
+
+	/**
+		find default height value from browser controls in audio tag (and controls height in video they should be the same)
+	**/
+	var audioElement = document.createElement('audio');
+	audioElement.controls = true;
+	//audioElement.style.width = 50+'px';
+	audioElement.style.position = 'absolute';
+	audioElement.style.left = -999+'px';
+	document.getElementsByTagName('body')[0].appendChild(audioElement);
+	//	audioElement.style.width = 'auto';
+	//	audioElement.style.height = 'auto'
+	var calcAudioElementHeight = audioElement.offsetHeight;
+	document.getElementsByTagName('body')[0].removeChild(audioElement);
+	//audioElement = null;
+	delete audioElement;
+
+	//alert(calcAudioElementHeight);
+	//chrome say nothing (30+"px" looks like ok):
+	if(!calcAudioElementHeight) calcAudioElementHeight = 30;
+	var podplayer = document.getElementById('podplayer');
+	if (podplayer.tagName.toLowerCase() == 'audio')
+	{
+		podplayer.style.height =  calcAudioElementHeight + 'px';
+		podplayer.style.width = 100 + '%';
+	}
+	var calcMenueElementHeight = document.getElementById('menue').offsetHeight;
+	//alert(calcMenueElementHeight);
+	var chatElement = document.getElementById('chat');
+	var calcChatElementHeight = parseInt(window.innerHeight - calcMenueElementHeight - calcAudioElementHeight - 2);
+
+	var metainfoElement = document.getElementById('metainfo');
+	metainfoElement.style.top = calcMenueElementHeight + 10 + 'px';
+
+	window.onresize = function(event) {
+		var calcMenueElementHeight = document.getElementById('menue').offsetHeight;
+		var calcChatElementHeight = parseInt(window.innerHeight - calcMenueElementHeight - calcAudioElementHeight);
+		chatElement.style.height = calcChatElementHeight + 'px';
+
+		// if manual resize the chat window/textarea; in this case better to set to default 100% back again
+		chatElement.style.width = 100+'%';
+
+		metainfoElement.style.top = calcMenueElementHeight + 10 + 'px';
+	}
+	chatElement.style.height = calcChatElementHeight + 'px';
+
+
+
+	// USE PALYER WITH ID AND SELECT CHOICE
+
+	// USE PLAYER WITH ID "podplayer"
+	var _02_SyncPodChat = new syncPodChat();
+	_02_SyncPodChat.usePlayer = 'podplayer'; // use audio tag with id="podplayer"
+
+	//_02_SyncPodChat.usePlayer = false; // create new player append this on body
+
+	_02_SyncPodChat.difTime = -63; // default dif. time to sync chat and pod
+
+
+
+	/*
+	**********************************
+	 *** SELECT AUDIO/VIDEO FILE ****
+	**********************************
+	*/
+
+	//_02_SyncPodChat.podFile = _02_SyncPodChat.selectPodFile(); // used fileapi for select file (YOU HAVE PROBLEMS? DELETE OR COMMENT THIS LINE // UNCOMMENT NEXT LINE!)
+
+	_02_SyncPodChat.podFile = ['rz046-venus-express.mp3']; // set source src values of audio tag
+	//_02_SyncPodChat.podFile = ['alternativlos-27.opus','rz047-die-venus.oga','nsfw049-flauschsandstrahler.m4a','nsfw049-flauschsandstrahler.mp3','nsfw049-flauschsandstrahler.oga']; // set source src values of audio tag
+
+	 //_02_SyncPodChat.podFile = 'alternativlos-27.opus'; // if only one needed (src attribute set instead source tag)
+
+
+
+	/*
+	******************************
+	 *** SELECT CHATLOG FILE ****
+	******************************
+	*/
+
+	//_02_SyncPodChat.chatlogFile = _02_SyncPodChat.selectChatlogFile(); // used fileapi for select file (YOU HAVE PROBLEMS? DELETE OR COMMENT THIS // UNCOMMENT NEXT LINE!)
+
+	_02_SyncPodChat.chatlogFile = 'chatlog-nsfw049-flauschsandstrahler.log.html'; // set file for chatlog httprequest to parse
+
+	//_02_SyncPodChat.chatlogFile = 'ximie_log.txt'; // set file for chatlog httprequest to parse
+
+
+
+	/****START****/
+	_02_SyncPodChat.start(); // settings ready go
+
+
+
+</script>
+
+<script>
+
+
+		</script>
+
+</body>
+</html>
